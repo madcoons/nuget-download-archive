@@ -2,7 +2,7 @@
     <PropertyGroup>
         <IsPackable>true</IsPackable>
         <PackageId>DownloadArchive</PackageId>
-        <Version>1.0.6</Version>
+        <Version>1.0.7</Version>
         <Authors>MyDesigns Devs</Authors>
         <Company>MyDesigns</Company>
         <RepositoryUrl>https://github.com/madcoons/nuget-download-archive.git</RepositoryUrl>
@@ -15,7 +15,8 @@
         <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
         <DebugType>embedded</DebugType>
 
-        <NoWarn>NU5100;NU5128;NU5128</NoWarn>
+        <NoWarn>NU5100</NoWarn>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     </PropertyGroup>
 
     <!-- We need to package whole build directory -->
