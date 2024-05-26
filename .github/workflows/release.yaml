@@ -19,7 +19,6 @@ jobs:
             dotnet-version: 8.x
 
         - name: Pack
-          working-directory: DownloadArchive
           run: dotnet pack DownloadArchive -c Release
 
         - name: Publish nuget
