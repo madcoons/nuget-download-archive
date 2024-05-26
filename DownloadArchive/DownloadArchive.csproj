@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <PackageId>DownloadArchive</PackageId>
+        <Version>1.0.1</Version>
+        <Authors>MyDesigns Devs</Authors>
+        <Company>MyDesigns</Company>
+        <RepositoryUrl>https://github.com/madcoons/nuget-download-archive.git</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <PackageTags>Download;Archive</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <None Include="../README.md" Pack="true" PackagePath="/"/>
+        <None Include="build/DownloadArchive.targets" pack="true" PackagePath="build/"/>
+        <None Include="buildMultiTargeting/DownloadArchive.targets" Pack="true" PackagePath="buildMultiTargeting/"/>
+        <None Include="buildTransitive/DownloadArchive.targets" Pack="true" PackagePath="buildTransitive/"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3"/>
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3"/>
+    </ItemGroup>
+</Project>

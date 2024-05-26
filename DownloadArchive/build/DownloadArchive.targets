@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <_DownloadArchiveDllDir Condition="'$(_DebugDownloadArchive)' == 'True'">../bin/Debug/net8.0/</_DownloadArchiveDllDir>
+        <_DownloadArchiveDllDir Condition="'$(_DebugDownloadArchive)' == 'False'">$(MSBuildThisFileDirectory)../lib/net8.0/</_DownloadArchiveDllDir>
+    </PropertyGroup>
+
+    <UsingTask TaskName="DownloadArchive.DownloadArchive" AssemblyFile="$(_DownloadArchiveDllDir)DownloadArchive.dll"/>
+    <UsingTask TaskName="DownloadArchive.CleanOutput" AssemblyFile="$(_DownloadArchiveDllDir)DownloadArchive.dll"/>
+
+    <Target Name="_RemoveArchiveBeforeClean" BeforeTargets="Clean">
+        <CleanOutput
+                BaseDir="$([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(OutDir)))"
+                DownloadArchives="@(DownlaodArchive)"
+                IsTestProject="$(IsTestProject)"
+                OutputType="$(OutputType)"
+        />
+    </Target>
+
+    <Target Name="_DownloadArchiveAfterBuild" AfterTargets="Build">
+        <DownloadArchive
+                BaseDir="$([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(OutDir)))"
+                DownloadArchives="@(DownlaodArchive)"
+                IsTestProject="$(IsTestProject)"
+                OutputType="$(OutputType)"
+                PackageRoot="$(MSBuildThisFileDirectory)../"
+                RuntimeIdentifier="$(RuntimeIdentifier)"
+                UseSymLinks="True"
+        />
+    </Target>
+
+    <Target Name="_DownloadArchiveAfterPublish" AfterTargets="Publish">
+        <DownloadArchive
+                BaseDir="$([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(PublishDir)))"
+                DownloadArchives="@(DownlaodArchive)"
+                IsTestProject="$(IsTestProject)"
+                OutputType="$(OutputType)"
+                PackageRoot="$(MSBuildThisFileDirectory)../"
+                RuntimeIdentifier="$(RuntimeIdentifier)"
+                UseSymLinks="False"
+        />
+    </Target>
+</Project>

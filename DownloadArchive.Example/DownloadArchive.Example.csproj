@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <_DebugDownloadArchive>True</_DebugDownloadArchive>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\DownloadArchive\DownloadArchive.csproj" ReferenceOutputAssembly="false"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <DownlaodArchive
+                Include="gecko-driver-0.34.0"
+                Visible="false"
+                RID-linux-x64="https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz"
+                RID-osx-arm64="https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-macos-aarch64.tar.gz"
+                RID-win-x64="https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-win32.zip"
+        />
+    </ItemGroup>
+
+    <Import Project="../DownloadArchive/buildTransitive/DownloadArchive.targets"/>
+</Project>
