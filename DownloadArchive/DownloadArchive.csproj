@@ -20,7 +20,7 @@
 
     <!-- We need to package whole build directory -->
     <PropertyGroup>
-        <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
+        <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);_CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     </PropertyGroup>
     <Target Name="_CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
         <ItemGroup>
