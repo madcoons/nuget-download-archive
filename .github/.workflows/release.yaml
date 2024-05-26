@@ -1,0 +1,26 @@
+name: Release
+on:
+  push:
+    branches:
+      - "main"
+  workflow_dispatch:
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+jobs:
+    Release:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4.1.5
+
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v4
+          with:
+            dotnet-version: 8.x
+
+        - name: Pack
+          working-directory: DownloadArchive
+          run: dotnet pack DownloadArchive -c Release
+
+        - name: Publish nuget
+          run: dotnet nuget push DownloadArchive/bin/Release/DownloadArchive.*.nupkg -k ${{secrets.NUGET_API_KEY}} -s https://www.nuget.org --skip-duplicate
