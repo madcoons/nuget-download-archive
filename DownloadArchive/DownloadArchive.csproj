@@ -2,7 +2,7 @@
     <PropertyGroup>
         <IsPackable>true</IsPackable>
         <PackageId>DownloadArchive</PackageId>
-        <Version>1.0.11</Version>
+        <Version>1.0.12</Version>
         <Authors>MyDesigns Devs</Authors>
         <Company>MyDesigns</Company>
         <RepositoryUrl>https://github.com/madcoons/nuget-download-archive.git</RepositoryUrl>
@@ -10,7 +10,6 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <PackageTags>Download;Archive</PackageTags>
-        <!-- <DevelopmentDependency>true</DevelopmentDependency> -->
         <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
         <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
         <DebugType>embedded</DebugType>
