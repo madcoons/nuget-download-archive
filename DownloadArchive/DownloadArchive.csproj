@@ -2,7 +2,7 @@
     <PropertyGroup>
         <IsPackable>true</IsPackable>
         <PackageId>DownloadArchive</PackageId>
-        <Version>1.0.9</Version>
+        <Version>1.0.10</Version>
         <Authors>MyDesigns Devs</Authors>
         <Company>MyDesigns</Company>
         <RepositoryUrl>https://github.com/madcoons/nuget-download-archive.git</RepositoryUrl>
@@ -45,7 +45,6 @@
 
     <ItemGroup>
         <None Include="../README.md" Pack="true" PackagePath="/"/>
-<!--        <None Include="build/DownloadArchive.targets" pack="true" PackagePath="build/"/>-->
         <None Include="buildTransitive/DownloadArchive.targets" Pack="true" PackagePath="buildTransitive/"/>
     </ItemGroup>
 
