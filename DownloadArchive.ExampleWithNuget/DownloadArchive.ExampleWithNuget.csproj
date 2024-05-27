@@ -15,6 +15,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DownloadArchive" Version="1.0.11" />
+      <PackageReference Include="DownloadArchive" Version="1.0.12" />
     </ItemGroup>
 </Project>
