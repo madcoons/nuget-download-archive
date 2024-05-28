@@ -31,7 +31,18 @@ public class DownloadArchive : Microsoft.Build.Utilities.Task
     }
 
     public override bool Execute()
-        => ExecuteAsync().GetAwaiter().GetResult();
+    {
+        using Mutex mutex = new(false, "Global\\DownloadArchiveNuget");
+        mutex.WaitOne();
+        try
+        {
+            return ExecuteAsync().GetAwaiter().GetResult();
+        }
+        finally
+        {
+            mutex.ReleaseMutex();
+        }
+    }
 
     private async Task<bool> ExecuteAsync()
     {
@@ -45,8 +56,6 @@ public class DownloadArchive : Microsoft.Build.Utilities.Task
         ArchiveCacher archiveCacher = new(PackageRoot);
         ArchiveDecompressor archiveDecompressor = new(PackageRoot);
         OutputManager outputManager = new(BaseDir, _useSymLinks);
-
-        // string fileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
 
         DownloadArchiveDto[] archives = GetDownloadLinksByArchitecture();
 
