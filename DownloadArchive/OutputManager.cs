@@ -39,19 +39,33 @@ public class OutputManager(
             throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
         }
 
-        Directory.CreateDirectory(destinationDir);
-
-        DirectoryInfo[] dirs = dir.GetDirectories();
-        foreach (FileInfo file in dir.GetFiles())
+        if (dir.LinkTarget is not null)
         {
-            string targetFilePath = Path.Combine(destinationDir, file.Name);
-            file.CopyTo(targetFilePath);
+            Directory.CreateSymbolicLink(destinationDir, dir.LinkTarget);
         }
-
-        foreach (DirectoryInfo subDir in dirs)
+        else
         {
-            string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
-            CopyDirectory(subDir.FullName, newDestinationDir);
+            Directory.CreateDirectory(destinationDir);
+
+            DirectoryInfo[] dirs = dir.GetDirectories();
+            foreach (FileInfo file in dir.GetFiles())
+            {
+                string targetFilePath = Path.Combine(destinationDir, file.Name);
+                if (file.LinkTarget is not null)
+                {
+                    File.CreateSymbolicLink(targetFilePath, file.LinkTarget);
+                }
+                else
+                {
+                    file.CopyTo(targetFilePath);
+                }
+            }
+
+            foreach (DirectoryInfo subDir in dirs)
+            {
+                string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                CopyDirectory(subDir.FullName, newDestinationDir);
+            }
         }
     }
 }
