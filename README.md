@@ -20,10 +20,7 @@ The following example will download geckodriver to output `gecko-driver-0.34.0/(
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="DownloadArchive" Version="1.0.7">
-        <PrivateAssets>all</PrivateAssets>
-        <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      </PackageReference>
+      <PackageReference Include="DownloadArchive" Version="1.0.7" />
     </ItemGroup>
 </Project>
 ```
