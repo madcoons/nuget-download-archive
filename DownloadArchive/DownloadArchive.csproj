@@ -1,6 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
     <PropertyGroup>
         <IsPackable>true</IsPackable>
+        <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+        <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
+        <DebugType>embedded</DebugType>
+        <NoWarn>NU5100</NoWarn>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    </PropertyGroup>
+
+    <PropertyGroup>
         <PackageId>DownloadArchive</PackageId>
         <Version>1.0.15</Version>
         <Authors>MyDesigns Devs</Authors>
@@ -10,18 +20,13 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <PackageTags>Download;Archive</PackageTags>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
-        <DebugType>embedded</DebugType>
-
-        <NoWarn>NU5100</NoWarn>
-        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     </PropertyGroup>
 
     <!-- We need to package whole build directory -->
     <PropertyGroup>
         <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);_CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
     </PropertyGroup>
+
     <Target Name="_CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
         <ItemGroup>
             <BuildOutputInPackage
@@ -32,7 +37,7 @@
 
     <!-- Pack deps.json -->
     <Target Name="_AddBuildDependencyFileToBuiltProjectOutputGroupOutput"
-            BeforeTargets="BuiltProjectOutputGroup">
+            BeforeTargets="BuiltProjectOutputGroup" Condition="'$(TargetFramework)' != 'net481'">
 
         <ItemGroup>
             <BuiltProjectOutputGroupOutput
@@ -43,12 +48,37 @@
     </Target>
 
     <ItemGroup>
-        <None Include="../README.md" Pack="true" PackagePath="/"/>
-        <None Include="buildTransitive/DownloadArchive.targets" Pack="true" PackagePath="buildTransitive/"/>
+        <Content Include="../README.md" Pack="true" PackagePath="/" />
+        <Content Include="buildTransitive\*" PackagePath="buildTransitive\ "/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3" PrivateAssets="all"/>
-        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3" PrivateAssets="all" ExcludeAssets="Runtime"/>
+        <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3" PrivateAssets="all" />
+        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3" PrivateAssets="all" ExcludeAssets="Runtime" />
+        <PackageReference Include="PolySharp" Version="1.15.0">
+            <PrivateAssets>all</PrivateAssets>
+            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
     </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net481'">
+        <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="9.0.2" />
+        <PackageReference Include="AlphaFS" Version="2.2.6" />
+        <PackageReference Include="SharpCompress" Version="0.39.0" />
+        <PackageReference Include="System.Net.Http" Version="4.3.4" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net6.0'">
+        <PackageReference Include="SharpCompress" Version="0.39.0" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net7.0'">
+        <PackageReference Include="SharpCompress" Version="0.39.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Include="_archives\**" />
+      <None Include="_archives-cache\**" />
+    </ItemGroup>
+
 </Project>

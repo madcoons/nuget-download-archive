@@ -1,3 +1,7 @@
+#if NET481
+using System.Net.Http;
+#endif
+
 namespace DownloadArchive;
 
 public class ArchiveDownloader

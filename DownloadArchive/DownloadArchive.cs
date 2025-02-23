@@ -61,8 +61,11 @@ public class DownloadArchive : Microsoft.Build.Utilities.Task
 
         foreach (DownloadArchiveDto archive in archives)
         {
-            foreach ((string runtimeId, string url) in archive.RuntimeIdToUrlMap)
+            foreach (KeyValuePair<string, string> kvp in archive.RuntimeIdToUrlMap)
             {
+                string runtimeId = kvp.Key;
+                string url = kvp.Value;
+
                 if (RuntimeIdentifier is not null && !RuntimeIdentifier.Equals(runtimeId))
                 {
                     continue;
@@ -71,7 +74,11 @@ public class DownloadArchive : Microsoft.Build.Utilities.Task
                 string cachePath = archiveCacher.GetCachePath(url);
                 if (!File.Exists(cachePath))
                 {
+#if NET5_0_OR_GREATER
                     await using Stream archiveStream = await _archiveDownloader.DownlaodAsync(url);
+#else
+                    using Stream archiveStream = await _archiveDownloader.DownlaodAsync(url);
+#endif
                     await archiveCacher.CacheAsync(archiveStream, url);
                 }
 

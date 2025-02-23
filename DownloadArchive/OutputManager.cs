@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace DownloadArchive;
 
 public class OutputManager(
@@ -23,7 +25,7 @@ public class OutputManager(
 
         if (useLinks)
         {
-            Directory.CreateSymbolicLink(outputDir, inputDir);
+            _DirectoryCreateSymbolicLinkImpl(outputDir, inputDir);
         }
         else
         {
@@ -39,9 +41,10 @@ public class OutputManager(
             throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
         }
 
-        if (dir.LinkTarget is not null)
+        string? dirLinkTarget = _DirectoryLinkTargetImpl(dir);
+        if (dirLinkTarget is not null)
         {
-            Directory.CreateSymbolicLink(destinationDir, dir.LinkTarget);
+            _DirectoryCreateSymbolicLinkImpl(destinationDir, dirLinkTarget);
         }
         else
         {
@@ -51,9 +54,11 @@ public class OutputManager(
             foreach (FileInfo file in dir.GetFiles())
             {
                 string targetFilePath = Path.Combine(destinationDir, file.Name);
-                if (file.LinkTarget is not null)
+                string? fileLinkTarget = _FileLinkTargetImpl(file);
+
+                if (fileLinkTarget is not null)
                 {
-                    File.CreateSymbolicLink(targetFilePath, file.LinkTarget);
+                    _FileCreateSymbolicLinkImpl(targetFilePath, fileLinkTarget);
                 }
                 else
                 {
@@ -68,4 +73,48 @@ public class OutputManager(
             }
         }
     }
+
+#if NET6_0_OR_GREATER
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void _DirectoryCreateSymbolicLinkImpl(string path, string pathToTarget) => Directory.CreateSymbolicLink(path, pathToTarget);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void _FileCreateSymbolicLinkImpl(string path, string pathToTarget) => File.CreateSymbolicLink(path, pathToTarget);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static string? _DirectoryLinkTargetImpl(DirectoryInfo fileInfo) => fileInfo.LinkTarget;
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static string? _FileLinkTargetImpl(FileInfo directoryInfo) => directoryInfo.LinkTarget;
+#else
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void _DirectoryCreateSymbolicLinkImpl(string path, string pathToTarget) =>
+        Alphaleonis.Win32.Filesystem.Directory.CreateSymbolicLink(path, pathToTarget);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void _FileCreateSymbolicLinkImpl(string path, string pathToTarget) =>
+        Alphaleonis.Win32.Filesystem.File.CreateSymbolicLink(path, pathToTarget);
+
+    private static string? _DirectoryLinkTargetImpl(DirectoryInfo directoryInfo)
+    {
+        if (Alphaleonis.Win32.Filesystem.File.Exists(directoryInfo.FullName) &&
+            Alphaleonis.Win32.Filesystem.File.GetAttributes(directoryInfo.FullName).HasFlag(FileAttributes.ReparsePoint))
+        {
+            return Alphaleonis.Win32.Filesystem.File.GetLinkTargetInfo(directoryInfo.FullName)?.PrintName;
+        }
+
+        return null;
+    }
+
+    private static string? _FileLinkTargetImpl(FileInfo fileInfo)
+    {
+        if (Alphaleonis.Win32.Filesystem.File.Exists(fileInfo.FullName) &&
+            Alphaleonis.Win32.Filesystem.File.GetAttributes(fileInfo.FullName).HasFlag(FileAttributes.ReparsePoint))
+        {
+            return Alphaleonis.Win32.Filesystem.File.GetLinkTargetInfo(fileInfo.FullName)?.PrintName;
+        }
+
+        return null;
+    }
+#endif
 }

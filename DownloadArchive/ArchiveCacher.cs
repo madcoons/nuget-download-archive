@@ -19,7 +19,11 @@ public class ArchiveCacher(
         }
 
         string cacheFilePath = GetCacheFilePath(url);
+#if NET5_0_OR_GREATER
         await using FileStream file = File.OpenWrite(cacheFilePath);
+#else
+        using FileStream file = File.OpenWrite(cacheFilePath);
+#endif
         await stream.CopyToAsync(file);
 
         return cacheFilePath;
