@@ -5,6 +5,7 @@
         <TaskFolder Condition="'$(MSBuildRuntimeType)' != 'Core'">net481</TaskFolder>
         <TaskAssembly Condition="'$(_DebugDownloadArchive)' != 'True'">$(MSBuildThisFileDirectory)..\tasks\$(TaskFolder)\DownloadArchive.dll</TaskAssembly>
         <TaskAssembly Condition="'$(_DebugDownloadArchive)' == 'True'">$(MSBuildThisFileDirectory)..\bin\Debug\$(TaskFolder)\DownloadArchive.dll</TaskAssembly>
+        <UseSymLinksDownloadArchive Condition="'$(UseSymLinksDownloadArchive)' == ''">True</UseSymLinksDownloadArchive>
     </PropertyGroup>
 
     <UsingTask TaskName="DownloadArchive.DownloadArchive" AssemblyFile="$(TaskAssembly)" />
@@ -27,7 +28,7 @@
                 OutputType="$(OutputType)"
                 PackageRoot="$(MSBuildThisFileDirectory)../"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
-                UseSymLinks="True"
+                UseSymLinks="$(UseSymLinksDownloadArchive)"
         />
     </Target>
 
@@ -39,7 +40,7 @@
                 OutputType="$(OutputType)"
                 PackageRoot="$(MSBuildThisFileDirectory)../"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
-                UseSymLinks="True"
+                UseSymLinks="$(UseSymLinksDownloadArchive)"
         />
     </Target>
 </Project>
