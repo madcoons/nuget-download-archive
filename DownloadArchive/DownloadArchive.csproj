@@ -10,7 +10,7 @@
 
         <IsPackable>true</IsPackable>
         <PackageId>DownloadArchive</PackageId>
-        <Version>1.0.15</Version>
+        <Version>1.0.16</Version>
         <Authors>MyDesigns Devs</Authors>
         <Company>MyDesigns</Company>
         <RepositoryUrl>https://github.com/madcoons/nuget-download-archive.git</RepositoryUrl>
