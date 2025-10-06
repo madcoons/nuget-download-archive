@@ -134,6 +134,7 @@
             <Output TaskParameter="Args" ItemName="DownloadArchiveCliBuildArgs"/>
         </DownloadArchiveBuildArgsTask>
 
+        <Exec Command="chmod +x '$(DownloadArchiveExecutable)'" Condition=" '$(OS)' == 'Unix' "/>
         <Exec Command="'$(DownloadArchiveExecutable)' %(DownloadArchiveCliBuildArgs.Identity)"
               Condition="'@(DownloadArchiveCliBuildArgs)' != ''"/>
     </Target>
@@ -151,6 +152,7 @@
             <Output TaskParameter="Args" ItemName="DownloadArchiveCliBuildArgs"/>
         </DownloadArchiveBuildArgsTask>
 
+        <Exec Command="chmod +x '$(DownloadArchiveExecutable)'" Condition=" '$(OS)' == 'Unix' "/>
         <Exec Command="'$(DownloadArchiveExecutable)' %(DownloadArchiveCliBuildArgs.Identity)"
               Condition="'@(DownloadArchiveCliBuildArgs)' != ''"/>
     </Target>
