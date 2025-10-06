@@ -1,43 +1,157 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="DownloadArchiveOSPlatform;DownloadArchiveOSArchitecture;DownloadArchiveRuntime;DownloadArchiveExecutableName;DownloadArchiveExecutable">
     <PropertyGroup>
-        <_DownloadArchiveDllDir Condition="'$(_DebugDownloadArchive)' == 'True'">../bin/Debug/net8.0/</_DownloadArchiveDllDir>
-        <_DownloadArchiveDllDir Condition="'$(_DebugDownloadArchive)' != 'True'">$(MSBuildThisFileDirectory)../tasks/net8.0/</_DownloadArchiveDllDir>
-    </PropertyGroup>
+        <DownloadArchiveOSPlatform Condition="$([MSBuild]::IsOSPlatform('windows'))">win</DownloadArchiveOSPlatform>
+        <DownloadArchiveOSPlatform Condition="$([MSBuild]::IsOSPlatform('osx'))">osx</DownloadArchiveOSPlatform>
+        <DownloadArchiveOSPlatform Condition="$([MSBuild]::IsOSPlatform('linux'))">linux</DownloadArchiveOSPlatform>
+        <DownloadArchiveOSArchitecture>$([System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture.ToString().ToLower())</DownloadArchiveOSArchitecture>
+        <DownloadArchiveRuntime>$(DownloadArchiveOSPlatform)-$(DownloadArchiveOSArchitecture)</DownloadArchiveRuntime>
+        <DownloadArchiveExecutableName Condition="$([MSBuild]::IsOSPlatform('windows'))">DownloadArchive.exe</DownloadArchiveExecutableName>
+        <DownloadArchiveExecutableName Condition="! $([MSBuild]::IsOSPlatform('windows'))">DownloadArchive</DownloadArchiveExecutableName>
 
-    <UsingTask TaskName="DownloadArchive.DownloadArchive" AssemblyFile="$(_DownloadArchiveDllDir)DownloadArchive.dll"/>
-    <UsingTask TaskName="DownloadArchive.CleanOutput" AssemblyFile="$(_DownloadArchiveDllDir)DownloadArchive.dll"/>
+        <DownloadArchiveExecutable Condition="'$(_DebugDownloadArchive)' == 'True'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'bin', 'Debug', 'net9.0', '$(DownloadArchiveExecutableName)'))))</DownloadArchiveExecutable>
+        <DownloadArchiveExecutable Condition="'$(_DebugDownloadArchive)' != 'True'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'executables', '$(DownloadArchiveRuntime)', '$(DownloadArchiveExecutableName)'))))</DownloadArchiveExecutable>
+    </PropertyGroup>
+    <UsingTask TaskName="DownloadArchiveCleanTask"
+               TaskFactory="RoslynCodeTaskFactory"
+               AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <TargetDir ParameterType="System.String" Required="true"/>
+            <OutputType ParameterType="System.String"/>
+            <IsTestProject ParameterType="System.Boolean"/>
+            <InputItems ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+        </ParameterGroup>
+
+        <Task>
+            <Using Namespace="System"/>
+            <Using Namespace="Microsoft.Build.Framework"/>
+            <Using Namespace="Microsoft.Build.Utilities"/>
+
+            <Code Type="Fragment" Language="cs"><![CDATA[
+                if (!IsTestProject && !(OutputType is null || OutputType.Equals("exe", StringComparison.OrdinalIgnoreCase)))
+                {
+                    return true;
+                }
+                
+                foreach (var item in InputItems)
+                {
+                    string outputPath = Path.Combine(TargetDir, item.ItemSpec);
+                    if (Directory.Exists(outputPath))
+                    {
+                        Directory.Delete(outputPath, true);
+                    }
+                }
+              ]]>
+            </Code>
+        </Task>
+    </UsingTask>
+
+    <UsingTask TaskName="DownloadArchiveBuildArgsTask"
+               TaskFactory="RoslynCodeTaskFactory"
+               AssemblyFile="$(MSBuildBinPath)\Microsoft.Build.Tasks.Core.dll">
+        <ParameterGroup>
+            <TargetDir ParameterType="System.String" Required="true"/>
+            <PackageRoot ParameterType="System.String" Required="true"/>
+            <IsTestProject ParameterType="System.Boolean"/>
+            <RuntimeIdentifier ParameterType="System.String"/>
+            <OutputType ParameterType="System.String"/>
+            <UseSymLinks ParameterType="System.Boolean" Required="true"/>
+            <InputItems ParameterType="Microsoft.Build.Framework.ITaskItem[]" Required="true"/>
+            <Args ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true"/>
+        </ParameterGroup>
+
+        <Task>
+            <Using Namespace="System"/>
+            <Using Namespace="System.Linq"/>
+            <Using Namespace="System.Collections.Generic"/>
+            <Using Namespace="Microsoft.Build.Framework"/>
+            <Using Namespace="Microsoft.Build.Utilities"/>
+
+            <Code Type="Fragment" Language="cs"><![CDATA[
+                if (!IsTestProject && !(OutputType is null || OutputType.Equals("exe", StringComparison.OrdinalIgnoreCase)))
+                {
+                    Args = Array.Empty<ITaskItem>();
+                    return true;
+                }
+        
+                var result = new List<ITaskItem>();
+                foreach (var item in InputItems)
+                {
+                    foreach (string name in item.MetadataNames.OfType<string>())
+                    {
+                        if (name.StartsWith("RID-", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var val = item.GetMetadata(name);
+                            if (!string.IsNullOrEmpty(val))
+                            {
+                                string runtimeId = name.Substring(4);
+                                if (RuntimeIdentifier != null && !RuntimeIdentifier.Equals(runtimeId, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    continue;
+                                }
+                        
+                                var argOptions = new List<string>();
+                                argOptions.Add("build");
+                                argOptions.Add($"--name=\"{item.ItemSpec}\"");
+                                argOptions.Add($"--rid=\"{runtimeId}\"");
+                                argOptions.Add($"--url=\"{val}\"");
+                                argOptions.Add($"--use-sym-links={UseSymLinks.ToString().ToLowerInvariant()}");
+                                argOptions.Add($"--target-dir=\"{TargetDir}\"");
+                                argOptions.Add($"--package-root=\"{PackageRoot}\"");
+        
+                                var cliArg = string.Join(" ", argOptions);
+                                var taskItem = new TaskItem(cliArg);
+                                result.Add(taskItem);
+                            }
+                        }
+                    }
+                }
+        
+                Args = result.ToArray();
+              ]]>
+            </Code>
+        </Task>
+    </UsingTask>
 
     <Target Name="_RemoveArchiveBeforeClean" BeforeTargets="Clean">
-        <CleanOutput
-                BaseDir="$([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(OutDir)))"
-                DownloadArchives="@(DownlaodArchive)"
+        <DownloadArchiveCleanTask
+                TargetDir="$(TargetDir)"
+                InputItems="@(DownloadArchive)"
                 IsTestProject="$(IsTestProject)"
                 OutputType="$(OutputType)"
         />
     </Target>
 
     <Target Name="_DownloadArchiveAfterBuild" AfterTargets="Build">
-        <DownloadArchive
-                BaseDir="$([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(OutDir)))"
-                DownloadArchives="@(DownlaodArchive)"
-                IsTestProject="$(IsTestProject)"
-                OutputType="$(OutputType)"
-                PackageRoot="$(MSBuildThisFileDirectory)../"
+        <DownloadArchiveBuildArgsTask
+                TargetDir="$(TargetDir)"
+                InputItems="@(DownloadArchive)"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
-                UseSymLinks="True"
-        />
+                IsTestProject="$(IsTestProject)"
+                UseSymLinks="true"
+                PackageRoot="$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '../'))))"
+        >
+            <Output TaskParameter="Args" ItemName="DownloadArchiveCliBuildArgs"/>
+        </DownloadArchiveBuildArgsTask>
+
+        <Exec Command="'$(DownloadArchiveExecutable)' %(DownloadArchiveCliBuildArgs.Identity)"
+              Condition="'@(DownloadArchiveCliBuildArgs)' != ''"/>
     </Target>
 
     <Target Name="_DownloadArchiveAfterPublish" AfterTargets="Publish">
-        <DownloadArchive
-                BaseDir="$([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(PublishDir)))"
-                DownloadArchives="@(DownlaodArchive)"
-                IsTestProject="$(IsTestProject)"
-                OutputType="$(OutputType)"
-                PackageRoot="$(MSBuildThisFileDirectory)../"
+        <DownloadArchiveBuildArgsTask
+                TargetDir="$(TargetDir)"
+                InputItems="@(DownloadArchive)"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
-                UseSymLinks="False"
-        />
+                IsTestProject="$(IsTestProject)"
+                UseSymLinks="false"
+                PackageRoot="$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '../'))))"
+                Condition="'@(DownloadArchive)' != ''"
+        >
+            <Output TaskParameter="Args" ItemName="DownloadArchiveCliBuildArgs"/>
+        </DownloadArchiveBuildArgsTask>
+
+        <Exec Command="'$(DownloadArchiveExecutable)' %(DownloadArchiveCliBuildArgs.Identity)"
+              Condition="'@(DownloadArchiveCliBuildArgs)' != ''"/>
     </Target>
 </Project>

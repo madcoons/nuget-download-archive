@@ -5,8 +5,11 @@ public class OutputManager(
     bool useLinks
 )
 {
-    public void GenerateOutput(string inputDir, string runtimeId, string name)
+    public void GenerateOutput(string inputDir, string runtimeId, string name,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+
         string outputBaseDir = Path.Combine(baseDir, name);
 
         if (!Directory.Exists(outputBaseDir))
@@ -31,7 +34,7 @@ public class OutputManager(
         }
     }
 
-    static void CopyDirectory(string sourceDir, string destinationDir)
+    static void CopyDirectory(string sourceDir, string destinationDir, CancellationToken cancellationToken = default)
     {
         DirectoryInfo dir = new(sourceDir);
         if (!dir.Exists)
@@ -50,6 +53,8 @@ public class OutputManager(
             DirectoryInfo[] dirs = dir.GetDirectories();
             foreach (FileInfo file in dir.GetFiles())
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 string targetFilePath = Path.Combine(destinationDir, file.Name);
                 if (file.LinkTarget is not null)
                 {
@@ -64,7 +69,7 @@ public class OutputManager(
             foreach (DirectoryInfo subDir in dirs)
             {
                 string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
-                CopyDirectory(subDir.FullName, newDestinationDir);
+                CopyDirectory(subDir.FullName, newDestinationDir, cancellationToken);
             }
         }
     }

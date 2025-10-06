@@ -17,7 +17,7 @@ public class ArchiveDecompressor(
         return destinationDir;
     }
 
-    public async Task<string> DecompressAsync(string inputPath, string url)
+    public async Task<string> DecompressAsync(string inputPath, string url, CancellationToken cancellationToken = default)
     {
         string destinationDir = GetOutputDir(inputPath);
         if (Directory.Exists(destinationDir))
@@ -32,19 +32,19 @@ public class ArchiveDecompressor(
             Directory.CreateDirectory(destinationDir);
         }
 
-        await DecompressToDirAsync(inputPath, destinationDir, originalFileName);
+        await DecompressToDirAsync(inputPath, destinationDir, originalFileName, cancellationToken);
 
         return destinationDir;
     }
 
-    private async Task DecompressToDirAsync(string inputPath, string dir, string originalFileName)
+    private async Task DecompressToDirAsync(string inputPath, string dir, string originalFileName, CancellationToken cancellationToken = default)
     {
         await using FileStream file = File.OpenRead(inputPath);
 
         if (originalFileName.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
         {
             await using GZipStream decompressor = new GZipStream(file, CompressionMode.Decompress);
-            await TarFile.ExtractToDirectoryAsync(decompressor, dir, true);
+            await TarFile.ExtractToDirectoryAsync(decompressor, dir, true, cancellationToken);
         }
         else if (originalFileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase))
         {

@@ -9,23 +9,19 @@ public class ArchiveCacher(
 {
     private readonly string _cacheDir = Path.Combine(packageRoot, "_archives-cache");
 
-    public string GetCachePath(string url) => GetCacheFilePath(url);
-
-    public async Task<string> CacheAsync(Stream stream, string url)
+    public async Task CacheAsync(Stream stream, string url, CancellationToken cancellationToken = default)
     {
         if (!Directory.Exists(_cacheDir))
         {
             Directory.CreateDirectory(_cacheDir);
         }
 
-        string cacheFilePath = GetCacheFilePath(url);
+        string cacheFilePath = GetCachePath(url);
         await using FileStream file = File.OpenWrite(cacheFilePath);
-        await stream.CopyToAsync(file);
-
-        return cacheFilePath;
+        await stream.CopyToAsync(file, cancellationToken);
     }
 
-    private string GetCacheFilePath(string url)
+    public string GetCachePath(string url)
     {
         byte[] inputBytes = Encoding.UTF8.GetBytes(url);
         using SHA256 sha256 = SHA256.Create();

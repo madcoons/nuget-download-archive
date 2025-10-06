@@ -1,5 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <IsAotCompatible>true</IsAotCompatible>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <StaticOpenSslLinking Condition="$([MSBuild]::IsOSPlatform('linux'))">true</StaticOpenSslLinking>
+        <StaticExecutable Condition="$([MSBuild]::IsOSPlatform('linux'))">true</StaticExecutable>
+        <DebugType>embedded</DebugType>
+        <PublishSingleFile>true</PublishSingleFile>
+
         <IsPackable>true</IsPackable>
         <PackageId>DownloadArchive</PackageId>
         <Version>1.0.15</Version>
@@ -10,45 +18,24 @@
         <PackageReadmeFile>README.md</PackageReadmeFile>
         <PublishRepositoryUrl>true</PublishRepositoryUrl>
         <PackageTags>Download;Archive</PackageTags>
-        <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-        <BuildOutputTargetFolder>tasks</BuildOutputTargetFolder>
-        <DebugType>embedded</DebugType>
-
-        <NoWarn>NU5100</NoWarn>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
     </PropertyGroup>
-
-    <!-- We need to package whole build directory -->
-    <PropertyGroup>
-        <TargetsForTfmSpecificBuildOutput>$(TargetsForTfmSpecificBuildOutput);_CopyProjectReferencesToPackage</TargetsForTfmSpecificBuildOutput>
-    </PropertyGroup>
-    <Target Name="_CopyProjectReferencesToPackage" DependsOnTargets="ResolveReferences">
-        <ItemGroup>
-            <BuildOutputInPackage
-                    Include="@(ReferenceCopyLocalPaths)"
-                    TargetPath="%(ReferenceCopyLocalPaths.DestinationSubPath)"/>
-        </ItemGroup>
-    </Target>
-
-    <!-- Pack deps.json -->
-    <Target Name="_AddBuildDependencyFileToBuiltProjectOutputGroupOutput"
-            BeforeTargets="BuiltProjectOutputGroup">
-
-        <ItemGroup>
-            <BuiltProjectOutputGroupOutput
-                    Include="$(ProjectDepsFilePath)"
-                    TargetPath="$(ProjectDepsFileName)"
-                    FinalOutputPath="$(ProjectDepsFilePath)"/>
-        </ItemGroup>
-    </Target>
 
     <ItemGroup>
         <None Include="../README.md" Pack="true" PackagePath="/"/>
         <None Include="buildTransitive/DownloadArchive.targets" Pack="true" PackagePath="buildTransitive/"/>
+
+        <None Include="bin/Release/$(TargetFramework)/linux-x64/DownloadArchive" Pack="true" PackagePath="executables/linux-x64"/>
+        <None Include="bin/Release/$(TargetFramework)/linux-arm64/DownloadArchive" Pack="true" PackagePath="executables/linux-arm64"/>
+        <None Include="bin/Release/$(TargetFramework)/osx-arm64/DownloadArchive" Pack="true" PackagePath="executables/osx-arm64"/>
+        <None Include="bin/Release/$(TargetFramework)/osx-x64/DownloadArchive" Pack="true" PackagePath="executables/osx-x64"/>
+        <None Include="bin/Release/$(TargetFramework)/win-x64/DownloadArchive.exe" Pack="true" PackagePath="executables/win-x64"/>
+        <None Include="bin/Release/$(TargetFramework)/win-x86/DownloadArchive.exe" Pack="true" PackagePath="executables/win-x86"/>
+        <None Include="bin/Release/$(TargetFramework)/win-arm64/DownloadArchive.exe" Pack="true" PackagePath="executables/win-arm64"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.Build.Framework" Version="17.8.3" PrivateAssets="all"/>
-        <PackageReference Include="Microsoft.Build.Utilities.Core" Version="17.8.3" PrivateAssets="all" ExcludeAssets="Runtime"/>
+        <PackageReference Include="System.CommandLine" Version="2.0.0-rc.1.25451.107" PrivateAssets="all"/>
     </ItemGroup>
 </Project>

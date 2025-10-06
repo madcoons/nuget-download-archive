@@ -18,8 +18,29 @@ jobs:
           with:
             dotnet-version: 9.x
 
-        - name: Pack
-          run: dotnet pack DownloadArchive -c Release
+        - name: Build for Linux x64
+          run: dotnet publish DownloadArchive -r linux-x64
+
+        - name: Build for Linux ARM64
+          run: dotnet publish DownloadArchive -r linux-arm64
+
+        - name: Build for macOS x64
+          run: dotnet publish DownloadArchive -r osx-x64
+
+        - name: Build for macOS ARM64
+          run: dotnet publish DownloadArchive -r osx-arm64
+
+        - name: Build for Windows x64
+          run: dotnet publish DownloadArchive -r win-x64
+
+        - name: Build for Windows x86
+          run: dotnet publish DownloadArchive -r win-x86
+
+        - name: Build for Windows ARM64
+          run: dotnet publish DownloadArchive -r win-arm64
+
+        - name: Pack NuGet package
+          run: dotnet pack DownloadArchive --no-build
 
         - name: Publish nuget
           run: dotnet nuget push DownloadArchive/bin/Release/DownloadArchive.*.nupkg -k ${{secrets.NUGET_API_KEY}} -s https://www.nuget.org --skip-duplicate
