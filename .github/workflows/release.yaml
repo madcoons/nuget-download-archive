@@ -23,7 +23,7 @@ jobs:
           run: dotnet publish DownloadArchive.Lib -r linux-x64 -o artifacts/native-libs/linux-x64
 
         - name: Build DownloadArchive.BuildTasks (linux)
-          run: dotnet publish DownloadArchive.BuildTasks -r linux -t netstandard1.3 -o artifacts/tasks/netstandard1.3/linux
+          run: dotnet publish DownloadArchive.BuildTasks -r linux -f netstandard1.3 -o artifacts/tasks/netstandard1.3/linux
 
         - name: Upload artifacts
           uses: actions/upload-artifact@v4
@@ -69,7 +69,7 @@ jobs:
           run: dotnet publish DownloadArchive.Lib -r osx-arm64 -o artifacts/native-libs/osx-arm64
 
         - name: Build macOS Tasks
-          run: dotnet publish DownloadArchive.BuildTasks -r osx -t netstandard1.3 -o artifacts/tasks/netstandard1.3/osx
+          run: dotnet publish DownloadArchive.BuildTasks -r osx -f netstandard1.3 -o artifacts/tasks/netstandard1.3/osx
 
         - name: Upload artifacts
           uses: actions/upload-artifact@v4
@@ -98,10 +98,10 @@ jobs:
           run: dotnet publish DownloadArchive.Lib -r win-arm64 -o artifacts/native-libs/win-arm64
 
         - name: Build Windows Tasks netstandard1.3
-          run: dotnet publish DownloadArchive.BuildTasks -r win -t netstandard1.3 -o artifacts/tasks/netstandard1.3/win
+          run: dotnet publish DownloadArchive.BuildTasks -r win -f netstandard1.3 -o artifacts/tasks/netstandard1.3/win
 
         - name: Build Windows Tasks
-          run: dotnet publish DownloadArchive.BuildTasks -r win -t net46 -o artifacts/tasks/net46
+          run: dotnet publish DownloadArchive.BuildTasks -r win -f net46 -o artifacts/tasks/net46
 
         - name: Upload artifacts
           uses: actions/upload-artifact@v4
