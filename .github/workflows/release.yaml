@@ -19,6 +19,11 @@ jobs:
           with:
             dotnet-version: 9.x
 
+        - name: Install ARM64 cross toolchain
+          run: |
+            sudo apt-get update
+            sudo apt-get install -y binutils-aarch64-linux-gnu gcc-aarch64-linux-gnu
+
         - name: Build Linux x64
           run: dotnet publish DownloadArchive.Lib -r linux-x64 -o artifacts/native-libs/linux-x64
 
@@ -31,7 +36,7 @@ jobs:
         - name: Upload tasks artifacts
           uses: actions/upload-artifact@v4
           with:
-            name: artifacts
+            name: artifacts-linux
             path: artifacts
 
     build-macos:
@@ -57,7 +62,7 @@ jobs:
         - name: Upload artifacts
           uses: actions/upload-artifact@v4
           with:
-            name: artifacts
+            name: artifacts-osx
             path: artifacts
 
     build-windows:
@@ -86,19 +91,22 @@ jobs:
         - name: Upload artifacts
           uses: actions/upload-artifact@v4
           with:
-            name: artifacts
+            name: artifacts-win
             path: artifacts
 
-    Release:
+    release:
+        name: Release
         runs-on: ubuntu-latest
+        needs: [build-linux, build-macos, build-windows]
         steps:
         - uses: actions/checkout@v4
 
         - name: Download all artifacts
           uses: actions/download-artifact@v4
           with:
-            name: artifacts
+            name: artifacts-*
             path: artifacts
+            merge-multiple: true
 
         - name: Show downloaded structure
           run: |
