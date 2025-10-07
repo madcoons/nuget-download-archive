@@ -45,9 +45,6 @@ jobs:
         - name: Build DownloadArchive.Lib (linux-arm64)
           run: dotnet publish DownloadArchive.Lib -r linux-arm64 -o artifacts/native-libs/linux-arm64
 
-        - name: Build DownloadArchive.BuildTasks (linux-arm64)
-          run: dotnet publish DownloadArchive.BuildTasks -r linux-arm64 -o artifacts/tasks/linux-arm64
-
         - name: Upload artifacts
           uses: actions/upload-artifact@v4
           with:
