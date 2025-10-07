@@ -12,6 +12,7 @@
         <PackageTags>Download;Archive</PackageTags>
         <IncludeBuildOutput>false</IncludeBuildOutput>
         <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <NoWarn>$(NoWarn);NU5100</NoWarn>
     </PropertyGroup>
 
     <ItemGroup>
