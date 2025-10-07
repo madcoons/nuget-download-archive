@@ -2,8 +2,7 @@
 
     <PropertyGroup>
         <TargetFramework></TargetFramework>
-        <TargetFrameworks>netstandard1.3;net46</TargetFrameworks>
-        <NoWarn>$(NoWarn);NETSDK1215</NoWarn>
+        <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
     </PropertyGroup>
 
     <ItemGroup>

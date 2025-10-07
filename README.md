@@ -10,7 +10,7 @@ The following example will download geckodriver to output `gecko-driver-0.34.0/(
     </PropertyGroup>
 
     <ItemGroup>
-        <DownlaodArchive
+        <DownloadArchive
                 Include="gecko-driver-0.34.0"
                 Visible="false"
                 RID-linux-x64="https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz"
