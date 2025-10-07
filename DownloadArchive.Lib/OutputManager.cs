@@ -1,8 +1,7 @@
-namespace DownloadArchive;
+namespace DownloadArchive.Lib;
 
 public class OutputManager(
-    string baseDir,
-    bool useLinks
+    string baseDir
 )
 {
     public void GenerateOutput(string inputDir, string runtimeId, string name,
@@ -24,14 +23,7 @@ public class OutputManager(
             return;
         }
 
-        if (useLinks)
-        {
-            Directory.CreateSymbolicLink(outputDir, inputDir);
-        }
-        else
-        {
-            CopyDirectory(inputDir, outputDir);
-        }
+        CopyDirectory(inputDir, outputDir, cancellationToken);
     }
 
     static void CopyDirectory(string sourceDir, string destinationDir, CancellationToken cancellationToken = default)

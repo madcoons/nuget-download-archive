@@ -1,21 +1,12 @@
 using System.Security.Cryptography;
 using System.Text;
 
-namespace DownloadArchive;
+namespace DownloadArchive.Lib;
 
-public class ArchiveCacher(
-    string packageRoot
-)
+public class ArchiveCacher
 {
-    private readonly string _cacheDir = Path.Combine(packageRoot, "_archives-cache");
-
     public async Task CacheAsync(Stream stream, string url, CancellationToken cancellationToken = default)
     {
-        if (!Directory.Exists(_cacheDir))
-        {
-            Directory.CreateDirectory(_cacheDir);
-        }
-
         string cacheFilePath = GetCachePath(url);
         await using FileStream file = File.OpenWrite(cacheFilePath);
         await stream.CopyToAsync(file, cancellationToken);
@@ -29,7 +20,13 @@ public class ArchiveCacher(
         string base64Hash = Convert.ToBase64String(hashBytes);
         string sanitizedBase64Hash = new string(Array.FindAll(base64Hash.ToCharArray(), char.IsLetterOrDigit));
 
-        string cacheFilePath = Path.Combine(_cacheDir, $"{sanitizedBase64Hash}.bin");
+        string cacheFilePath = Path.GetFullPath(Path.Combine(
+            Path.GetTempPath(),
+            "nuget-download-archive",
+            "archives-cache",
+            $"{sanitizedBase64Hash}.bin"
+        ));
+
         return cacheFilePath;
     }
 }

@@ -1,4 +1,4 @@
-namespace DownloadArchive;
+namespace DownloadArchive.Lib;
 
 public class ArchiveDownloader
 {

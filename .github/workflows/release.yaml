@@ -8,9 +8,10 @@ concurrency:
   group: ${{ github.workflow }}
   cancel-in-progress: false
 jobs:
-    Release:
-        runs-on: ubuntu-latest
-        steps:
+    build-linux:
+      name: Build Linux (x64 + arm64)
+      runs-on: ubuntu-latest
+      steps:
         - uses: actions/checkout@v4
 
         - name: Setup .NET
@@ -18,29 +19,111 @@ jobs:
           with:
             dotnet-version: 9.x
 
-        - name: Build for Linux x64
-          run: dotnet publish DownloadArchive -r linux-x64
+        - name: Build Linux x64
+          run: dotnet publish DownloadArchive.Lib -r linux-x64 -o artifacts/native-libs/linux-x64
 
-        - name: Build for Linux ARM64
-          run: dotnet publish DownloadArchive -r linux-arm64
+        - name: Build Linux ARM64
+          run: dotnet publish DownloadArchive.Lib -r linux-arm64 -o artifacts/native-libs/linux-arm64
 
-        - name: Build for macOS x64
-          run: dotnet publish DownloadArchive -r osx-x64
+        - name: Build Linux ARM64
+          run: dotnet publish DownloadArchive.BuildTasks -r linux -o artifacts/tasks/linux
 
-        - name: Build for macOS ARM64
-          run: dotnet publish DownloadArchive -r osx-arm64
+        - name: Upload tasks artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: artifacts
+            path: artifacts
 
-        - name: Build for Windows x64
-          run: dotnet publish DownloadArchive -r win-x64
+    build-macos:
+      name: Build macOS (x64 + arm64)
+      runs-on: macos-latest
+      steps:
+        - uses: actions/checkout@v4
 
-        - name: Build for Windows x86
-          run: dotnet publish DownloadArchive -r win-x86
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v4
+          with:
+            dotnet-version: 9.x
 
-        - name: Build for Windows ARM64
-          run: dotnet publish DownloadArchive -r win-arm64
+        - name: Build macOS x64
+          run: dotnet publish DownloadArchive.Lib -r osx-x64 -o artifacts/native-libs/osx-x64
 
-        - name: Pack NuGet package
-          run: dotnet pack DownloadArchive --no-build
+        - name: Build macOS ARM64
+          run: dotnet publish DownloadArchive.Lib -r osx-arm64 -o artifacts/native-libs/osx-arm64
+
+        - name: Build macOS Tasks
+          run: dotnet publish DownloadArchive.BuildTasks -r osx -o artifacts/tasks/osx
+
+        - name: Upload artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: artifacts
+            path: artifacts
+
+    build-windows:
+      name: Build Windows (x64 + x86 + arm64)
+      runs-on: windows-latest
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v4
+          with:
+            dotnet-version: 9.x
+
+        - name: Build Windows x64
+          run: dotnet publish DownloadArchive.Lib -r win-x64 -o artifacts/native-libs/win-x64
+
+        - name: Build Windows x86
+          run: dotnet publish DownloadArchive.Lib -r win-x86 -o artifacts/native-libs/win-x86
+
+        - name: Build Windows ARM64
+          run: dotnet publish DownloadArchive.Lib -r win-arm64 -o artifacts/native-libs/win-arm64
+
+        - name: Build Windows Tasks
+          run: dotnet publish DownloadArchive.BuildTasks -r win-x64 -o artifacts/tasks/win
+
+        - name: Upload artifacts
+          uses: actions/upload-artifact@v4
+          with:
+            name: artifacts
+            path: artifacts
+
+    Release:
+        runs-on: ubuntu-latest
+        steps:
+        - uses: actions/checkout@v4
+
+        - name: Download all artifacts
+          uses: actions/download-artifact@v4
+          with:
+            name: artifacts
+            path: artifacts
+
+        - name: Show downloaded structure
+          run: |
+            echo "=== Artifacts Directory ==="
+            tree artifacts || ls -R artifacts
+
+        - name: Setup .NET
+          uses: actions/setup-dotnet@v4
+          with:
+            dotnet-version: 9.x
+
+        - name: Pack DownloadArchive
+          run: |
+            dotnet pack DownloadArchive \
+              -p:DownloadArchiveNativeLibsDir="$(pwd)/artifacts/native-libs" \
+              -p:DownloadArchiveTasksDir="$(pwd)/artifacts/tasks"
+
+        - name: Show NuGet package contents
+          run: |
+            mkdir pkg
+            for nupkg in DownloadArchive/bin/Release/*.nupkg; do
+              echo "=== Contents of $nupkg ==="
+              unzip -l "$nupkg"
+              echo ""
+            done
 
         - name: Publish nuget
           run: dotnet nuget push DownloadArchive/bin/Release/DownloadArchive.*.nupkg -k ${{secrets.NUGET_API_KEY}} -s https://www.nuget.org --skip-duplicate

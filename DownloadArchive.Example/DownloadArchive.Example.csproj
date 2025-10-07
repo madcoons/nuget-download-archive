@@ -5,10 +5,6 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\DownloadArchive\DownloadArchive.csproj" ReferenceOutputAssembly="false"/>
-    </ItemGroup>
-
-    <ItemGroup>
         <DownloadArchive
                 Include="gecko-driver-0.34.0"
                 Visible="false"

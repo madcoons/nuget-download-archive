@@ -1,23 +1,26 @@
 using System.Formats.Tar;
 using System.IO.Compression;
 
-namespace DownloadArchive;
+namespace DownloadArchive.Lib;
 
-public class ArchiveDecompressor(
-    string packageRoot
-)
+public class ArchiveDecompressor
 {
-    private readonly string _archivesDir = Path.Combine(packageRoot, "_archives");
-
     public string GetOutputDir(string inputPath)
     {
+        var archivesDir = Path.GetFullPath(Path.Combine(
+            Path.GetTempPath(),
+            "nuget-download-archive",
+            "archives"
+        ));
+
         string fileName = Path.GetFileNameWithoutExtension(inputPath);
-        string destinationDir = Path.Combine(_archivesDir, fileName);
+        string destinationDir = Path.GetFullPath(Path.Combine(archivesDir, fileName));
 
         return destinationDir;
     }
 
-    public async Task<string> DecompressAsync(string inputPath, string url, CancellationToken cancellationToken = default)
+    public async Task<string> DecompressAsync(string inputPath, string url,
+        CancellationToken cancellationToken = default)
     {
         string destinationDir = GetOutputDir(inputPath);
         if (Directory.Exists(destinationDir))
@@ -37,7 +40,8 @@ public class ArchiveDecompressor(
         return destinationDir;
     }
 
-    private async Task DecompressToDirAsync(string inputPath, string dir, string originalFileName, CancellationToken cancellationToken = default)
+    private async Task DecompressToDirAsync(string inputPath, string dir, string originalFileName,
+        CancellationToken cancellationToken = default)
     {
         await using FileStream file = File.OpenRead(inputPath);
 

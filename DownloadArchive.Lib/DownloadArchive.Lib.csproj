@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <PublishAot>true</PublishAot>
+        <InvariantGlobalization>true</InvariantGlobalization>
+        <!--<StaticOpenSslLinking Condition="$([MSBuild]::IsOSPlatform('linux'))">true</StaticOpenSslLinking>-->
+        <!--<StaticExecutable Condition="$([MSBuild]::IsOSPlatform('linux'))">true</StaticExecutable>-->
+        <DebugType>embedded</DebugType>
+    </PropertyGroup>
+
+    <ItemGroup Condition="$([MSBuild]::IsOSPlatform('osx')) AND $(IsDotnetFromBrew) == 'True'">
+        <LinkerArg Include="-L/opt/homebrew/opt/openssl@3/lib"/>
+        <LinkerArg Include="-Wl,-rpath,/opt/homebrew/opt/openssl@3/lib"/>
+
+        <LinkerArg Include="-L/opt/homebrew/opt/brotli/lib"/>
+        <LinkerArg Include="-Wl,-rpath,/opt/homebrew/opt/brotli/lib"/>
+    </ItemGroup>
+
+</Project>

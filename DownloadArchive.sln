@@ -12,6 +12,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadArchive.Example", "
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadArchive.ExampleWithNuget", "DownloadArchive.ExampleWithNuget\DownloadArchive.ExampleWithNuget.csproj", "{C3ADEF57-84C7-4048-9032-45759207FD91}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadArchive.BuildTasks", "DownloadArchive.BuildTasks\DownloadArchive.BuildTasks.csproj", "{4056C47C-8DF3-40F1-94E4-3ADCB10C6D5E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DownloadArchive.Lib", "DownloadArchive.Lib\DownloadArchive.Lib.csproj", "{6CF43EA3-20AD-4942-BC4F-A6C25D82F5F3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +34,13 @@ Global
 		{C3ADEF57-84C7-4048-9032-45759207FD91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C3ADEF57-84C7-4048-9032-45759207FD91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C3ADEF57-84C7-4048-9032-45759207FD91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4056C47C-8DF3-40F1-94E4-3ADCB10C6D5E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4056C47C-8DF3-40F1-94E4-3ADCB10C6D5E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4056C47C-8DF3-40F1-94E4-3ADCB10C6D5E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4056C47C-8DF3-40F1-94E4-3ADCB10C6D5E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CF43EA3-20AD-4942-BC4F-A6C25D82F5F3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CF43EA3-20AD-4942-BC4F-A6C25D82F5F3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CF43EA3-20AD-4942-BC4F-A6C25D82F5F3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CF43EA3-20AD-4942-BC4F-A6C25D82F5F3}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
