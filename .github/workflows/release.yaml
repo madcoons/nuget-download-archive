@@ -10,7 +10,7 @@ concurrency:
 jobs:
     build-linux-x64:
       name: Build Linux x64
-      runs-on: ubuntu-latest    # x64 runner
+      runs-on: ubuntu-latest
       steps:
         - uses: actions/checkout@v4
 
