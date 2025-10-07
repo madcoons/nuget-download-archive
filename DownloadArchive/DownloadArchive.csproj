@@ -19,7 +19,7 @@
         <None Include="buildTransitive/DownloadArchive.targets" Pack="true" PackagePath="buildTransitive/"/>
         <None Include="build/DownloadArchive.targets" Pack="true" PackagePath="build/"/>
 
-        <None Include="$(DownloadArchiveTasksDir)" Pack="true" PackagePath="tasks"/>
-        <None Include="$(DownloadArchiveNativeLibsDir)" Pack="true" PackagePath="native-libs"/>
+        <None Condition="'$(DownloadArchiveTasksDir)' != ''" Include="$(DownloadArchiveTasksDir)/**" Pack="true" PackagePath="tasks"/>
+        <None Condition="'$(DownloadArchiveNativeLibsDir)' != ''" Include="$(DownloadArchiveNativeLibsDir)/**" Pack="true" PackagePath="native-libs"/>
     </ItemGroup>
 </Project>
