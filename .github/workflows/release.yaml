@@ -119,7 +119,7 @@ jobs:
         - name: Download all artifacts
           uses: actions/download-artifact@v4
           with:
-            name: artifacts-*
+            name: artifacts*
             path: artifacts
             merge-multiple: true
 
