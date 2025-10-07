@@ -97,8 +97,11 @@ jobs:
         - name: Build Windows ARM64
           run: dotnet publish DownloadArchive.Lib -r win-arm64 -o artifacts/native-libs/win-arm64
 
+        - name: Build Windows Tasks netstandard1.3
+          run: dotnet publish DownloadArchive.BuildTasks -r win -t netstandard1.3 -o artifacts/tasks/netstandard1.3/win
+
         - name: Build Windows Tasks
-          run: dotnet publish DownloadArchive.BuildTasks -r win-x64 -o artifacts/tasks/win
+          run: dotnet publish DownloadArchive.BuildTasks -r win -t net46 -o artifacts/tasks/net46
 
         - name: Upload artifacts
           uses: actions/upload-artifact@v4
