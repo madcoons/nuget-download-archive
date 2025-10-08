@@ -177,5 +177,5 @@ jobs:
         - name: Add nuget from archive
           run: dotnet add ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive --source package --ignore-failed-sources
 
-        - name: Build project
-          run: dotnet build
+        - name: Build ExampleWithNuget project
+          run: dotnet build ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
