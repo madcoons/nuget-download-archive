@@ -12,7 +12,7 @@ public class CleanTask : Task
 
     public override bool Execute()
     {
-        if (!IsTestProject && !(OutputType is null || OutputType.Equals("exe", StringComparison.OrdinalIgnoreCase)))
+        if (!IsTestProject && !string.Equals(OutputType, "exe", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }

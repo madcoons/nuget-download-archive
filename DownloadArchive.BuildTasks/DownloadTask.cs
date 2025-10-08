@@ -31,7 +31,8 @@ public class DownloadTask : Task
 
     public override bool Execute()
     {
-        if (!IsTestProject && !(OutputType is null || OutputType.Equals("exe", StringComparison.OrdinalIgnoreCase)))
+        Log.LogMessage(MessageImportance.High, $"Output type {OutputType}");
+        if (!IsTestProject && !string.Equals(OutputType, "exe", StringComparison.OrdinalIgnoreCase))
         {
             return true;
         }
