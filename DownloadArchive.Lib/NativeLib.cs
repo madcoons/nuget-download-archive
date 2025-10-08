@@ -1,18 +1,42 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace DownloadArchive.Lib;
 
 public static class NativeLib
 {
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void LogCallback(int level, nint data, int length);
+
     [UnmanagedCallersOnly(EntryPoint = "execute_download", CallConvs = [typeof(CallConvCdecl)])]
     public static bool ExecuteDownload(
         nint targetDirPtr,
         nint ridPtr,
         nint namePtr,
-        nint urlPtr
+        nint urlPtr,
+        nint logPtr
     )
     {
+        var executeDownloadFunc = Marshal.GetDelegateForFunctionPointer<LogCallback>(logPtr);
+        var log = (int level, string message) =>
+        {
+            var bytes = Encoding.UTF8.GetBytes(message);
+            var messageHandle = GCHandle.Alloc(
+                value: bytes,
+                type: GCHandleType.Pinned
+            );
+            try
+            {
+                executeDownloadFunc(1, messageHandle.AddrOfPinnedObject(), bytes.Length);
+            }
+            finally
+            {
+                messageHandle.Free();
+            }
+        };
+
         try
         {
             var targetDir = Marshal.PtrToStringUTF8(targetDirPtr);
@@ -39,6 +63,8 @@ public static class NativeLib
         catch (Exception e)
         {
             Console.Error.WriteLine(e);
+            log(1, e.ToString());
+
             return false;
         }
     }
@@ -83,7 +109,7 @@ public static class NativeLib
         var timeout = TimeSpan.FromMinutes(10);
         var retryDelay = TimeSpan.FromMilliseconds(200);
 
-        var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+        var stopwatch = Stopwatch.StartNew();
         while (stopwatch.Elapsed < timeout)
         {
             try
