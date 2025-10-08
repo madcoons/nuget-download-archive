@@ -17,8 +17,10 @@ public static class NativeLibrary
 #else
 #if LINUX
     private const string LIBDL = "libdl.so.2";
-#else
+#elif OSX
     private const string LIBDL = "dl";
+#else
+    #error Unsupported platform
 #endif
 
     [DllImport(LIBDL)]
