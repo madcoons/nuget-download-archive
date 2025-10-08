@@ -175,6 +175,9 @@ jobs:
         - name: Add nuget from archive
           run: dotnet add ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive --source package
 
+        - name: Log libs
+          run: whereis libdl.so.2
+
         - name: Build ExampleWithNuget project
           run: dotnet build ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
           env:
