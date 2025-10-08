@@ -9,11 +9,15 @@ namespace DownloadArchive.BuildTasks;
 public class DownloadTask : Task
 {
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate void LogCallback(int level, nint data, int length);
+
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate bool ExecuteDownload(
         nint targetDirPtr,
         nint ridPtr,
         nint namePtr,
-        nint urlPtr
+        nint urlPtr,
+        nint logPtr
     );
 
     [Required] public string DownloadArchiveLib { get; set; } = null!;
@@ -56,75 +60,106 @@ public class DownloadTask : Task
             throw new Exception("Failed to get delegate.");
         }
 
-        foreach (var item in InputItems)
+        LogCallback log = (level, data, length) =>
         {
-            foreach (var metadataName in item.MetadataNames.OfType<string>())
-            {
-                if (metadataName.StartsWith("RID-", StringComparison.OrdinalIgnoreCase))
-                {
-                    var val = item.GetMetadata(metadataName);
-                    if (!string.IsNullOrEmpty(val))
-                    {
-                        var runtimeId = metadataName.Substring(4);
-                        if (RuntimeIdentifier != null &&
-                            !RuntimeIdentifier.Equals(runtimeId, StringComparison.OrdinalIgnoreCase))
-                        {
-                            continue;
-                        }
+            var buffer = new byte[length];
+            Marshal.Copy(data, buffer, 0, length);
+            var message = Encoding.UTF8.GetString(buffer);
 
-                        var targetDirHandle = GCHandle.Alloc(
-                            value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
-                            type: GCHandleType.Pinned
-                        );
-                        try
+            if (level == 0)
+            {
+                Log.LogMessage(message);
+            }
+            else if (level == 1)
+            {
+                Log.LogError(message);
+            }
+        };
+
+        var logCallbackHandle = GCHandle.Alloc(
+            value: log,
+            type: GCHandleType.Normal
+        );
+
+        try
+        {
+            nint logCallbackPtr = Marshal.GetFunctionPointerForDelegate(log);
+
+            foreach (var item in InputItems)
+            {
+                foreach (var metadataName in item.MetadataNames.OfType<string>())
+                {
+                    if (metadataName.StartsWith("RID-", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var val = item.GetMetadata(metadataName);
+                        if (!string.IsNullOrEmpty(val))
                         {
-                            var ridHandle = GCHandle.Alloc(
-                                value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
+                            var runtimeId = metadataName.Substring(4);
+                            if (RuntimeIdentifier != null &&
+                                !RuntimeIdentifier.Equals(runtimeId, StringComparison.OrdinalIgnoreCase))
+                            {
+                                continue;
+                            }
+
+                            var targetDirHandle = GCHandle.Alloc(
+                                value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
                                 type: GCHandleType.Pinned
                             );
                             try
                             {
-                                var nameHandle = GCHandle.Alloc(
-                                    value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
+                                var ridHandle = GCHandle.Alloc(
+                                    value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
                                     type: GCHandleType.Pinned
                                 );
                                 try
                                 {
-                                    var urlHandle = GCHandle.Alloc(
-                                        value: Encoding.UTF8.GetBytes(val + "\0"),
+                                    var nameHandle = GCHandle.Alloc(
+                                        value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
                                         type: GCHandleType.Pinned
                                     );
                                     try
                                     {
-                                        success &= executeDownloadFunc(
-                                            targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
-                                            ridPtr: ridHandle.AddrOfPinnedObject(),
-                                            namePtr: nameHandle.AddrOfPinnedObject(),
-                                            urlPtr: urlHandle.AddrOfPinnedObject()
+                                        var urlHandle = GCHandle.Alloc(
+                                            value: Encoding.UTF8.GetBytes(val + "\0"),
+                                            type: GCHandleType.Pinned
                                         );
+                                        try
+                                        {
+                                            success &= executeDownloadFunc(
+                                                targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
+                                                ridPtr: ridHandle.AddrOfPinnedObject(),
+                                                namePtr: nameHandle.AddrOfPinnedObject(),
+                                                urlPtr: urlHandle.AddrOfPinnedObject(),
+                                                logPtr: logCallbackPtr
+                                            );
+                                        }
+                                        finally
+                                        {
+                                            urlHandle.Free();
+                                        }
                                     }
                                     finally
                                     {
-                                        urlHandle.Free();
+                                        nameHandle.Free();
                                     }
                                 }
                                 finally
                                 {
-                                    nameHandle.Free();
+                                    ridHandle.Free();
                                 }
                             }
                             finally
                             {
-                                ridHandle.Free();
+                                targetDirHandle.Free();
                             }
-                        }
-                        finally
-                        {
-                            targetDirHandle.Free();
                         }
                     }
                 }
             }
+        }
+        finally
+        {
+            logCallbackHandle.Free();
         }
 
         return success;
