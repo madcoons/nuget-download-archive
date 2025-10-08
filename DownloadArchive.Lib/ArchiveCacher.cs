@@ -3,12 +3,15 @@ using System.Text;
 
 namespace DownloadArchive.Lib;
 
-public class ArchiveCacher
+public class ArchiveCacher(Action<int, string> log)
 {
     public async Task CacheAsync(Stream stream, string url, CancellationToken cancellationToken = default)
     {
         string cacheFilePath = GetCachePath(url);
         await using FileStream file = File.OpenWrite(cacheFilePath);
+
+        log(0, $"Writing cache for {url} to {cacheFilePath}");
+
         await stream.CopyToAsync(file, cancellationToken);
     }
 

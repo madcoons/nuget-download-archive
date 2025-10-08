@@ -3,7 +3,7 @@ using System.IO.Compression;
 
 namespace DownloadArchive.Lib;
 
-public class ArchiveDecompressor
+public class ArchiveDecompressor(Action<int, string> log)
 {
     public string GetOutputDir(string inputPath)
     {
@@ -34,6 +34,8 @@ public class ArchiveDecompressor
         {
             Directory.CreateDirectory(destinationDir);
         }
+
+        log(0, $"Decompressing {inputPath} to {GetOutputDir(inputPath)}");
 
         await DecompressToDirAsync(inputPath, destinationDir, originalFileName, cancellationToken);
 

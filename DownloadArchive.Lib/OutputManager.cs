@@ -1,7 +1,8 @@
 namespace DownloadArchive.Lib;
 
 public class OutputManager(
-    string baseDir
+    string baseDir,
+    Action<int, string> log
 )
 {
     public void GenerateOutput(string inputDir, string runtimeId, string name,
@@ -22,6 +23,8 @@ public class OutputManager(
         {
             return;
         }
+
+        log(0, $"Coping {inputDir} to {outputDir}");
 
         CopyDirectory(inputDir, outputDir, cancellationToken);
     }
