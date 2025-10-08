@@ -15,7 +15,13 @@ public static class NativeLibrary
     [DllImport(KERNEL32, SetLastError = true)]
     private static extern bool FreeLibrary(IntPtr hModule);
 #else
-    private const string LIBDL = "libdl";
+#if LINUX
+    private const string LIBDL = "libdl.so.2";
+#elif OSX
+    private const string LIBDL = "dl";
+#else
+    #error Unsupported platform
+#endif
 
     [DllImport(LIBDL)]
     private static extern IntPtr dlopen(string fileName, int flags);

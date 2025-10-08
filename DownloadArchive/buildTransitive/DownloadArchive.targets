@@ -23,7 +23,7 @@
 
     <Target Name="_RemoveArchiveBeforeClean" BeforeTargets="Clean">
         <CleanTask
-                TargetDir="$(TargetDir)"
+                TargetDir="$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(OutDir)))))"
                 InputItems="@(DownloadArchive)"
                 IsTestProject="$(IsTestProject)"
                 OutputType="$(OutputType)"
@@ -33,7 +33,7 @@
     <Target Name="_DownloadArchiveAfterBuild" AfterTargets="Build">
         <DownloadTask
                 DownloadArchiveLib="$(DownloadArchiveLib)"
-                TargetDir="$(TargetDir)"
+                TargetDir="$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(OutDir)))))"
                 InputItems="@(DownloadArchive)"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
                 IsTestProject="$(IsTestProject)"
@@ -43,7 +43,7 @@
     <Target Name="_DownloadArchiveAfterPublish" AfterTargets="Publish">
         <DownloadTask
                 DownloadArchiveLib="$(DownloadArchiveLib)"
-                TargetDir="$(TargetDir)"
+                TargetDir="$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(PublishDir)))))"
                 InputItems="@(DownloadArchive)"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
                 IsTestProject="$(IsTestProject)"

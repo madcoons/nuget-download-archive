@@ -3,6 +3,10 @@
     <PropertyGroup>
         <TargetFramework></TargetFramework>
         <TargetFrameworks>netstandard2.0;net46</TargetFrameworks>
+        
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('windows'))">$(DefineConstants);WINDOWS</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('osx'))">$(DefineConstants);OSX</DefineConstants>
+        <DefineConstants Condition="$([MSBuild]::IsOSPlatform('linux'))">$(DefineConstants);LINUX</DefineConstants>
     </PropertyGroup>
 
     <ItemGroup>
