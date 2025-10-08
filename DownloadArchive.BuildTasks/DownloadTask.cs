@@ -1,4 +1,5 @@
-﻿using System.Runtime.InteropServices;
+﻿using System.Collections.Concurrent;
+using System.Runtime.InteropServices;
 using System.Text;
 using Microsoft.Build.Framework;
 using Task = Microsoft.Build.Utilities.Task;
@@ -22,6 +23,8 @@ public class DownloadTask : Task
     public string? OutputType { get; set; }
     [Required] public ITaskItem[] InputItems { get; set; } = null!;
 
+    private static readonly ConcurrentDictionary<string, nint> LibHandles = new();
+
     public override bool Execute()
     {
         if (!IsTestProject && !(OutputType is null || OutputType.Equals("exe", StringComparison.OrdinalIgnoreCase)))
@@ -29,101 +32,99 @@ public class DownloadTask : Task
             return true;
         }
 
-        var libHandle = NativeLibrary.Load(DownloadArchiveLib);
-        if (libHandle == IntPtr.Zero)
+        var libHandle = LibHandles.GetOrAdd(DownloadArchiveLib, static path =>
         {
-            throw new Exception($"Failed to load library \"{DownloadArchiveLib}\".");
-        }
+            var libHandle = NativeLibrary.Load(path);
+            if (libHandle == IntPtr.Zero)
+            {
+                throw new Exception($"Failed to load library \"{path}\".");
+            }
+
+            return libHandle;
+        });
 
         var success = true;
-        try
+        var executeDownloadFuncHandle = NativeLibrary.GetExport(libHandle, "execute_download");
+        if (executeDownloadFuncHandle == IntPtr.Zero)
         {
-            var executeDownloadFuncHandle = NativeLibrary.GetExport(libHandle, "execute_download");
-            if (executeDownloadFuncHandle == IntPtr.Zero)
-            {
-                throw new Exception("Failed to load function \"execute_download\".");
-            }
+            throw new Exception("Failed to load function \"execute_download\".");
+        }
 
-            var executeDownloadFunc = Marshal.GetDelegateForFunctionPointer<ExecuteDownload>(executeDownloadFuncHandle);
-            if (executeDownloadFunc is null)
-            {
-                throw new Exception("Failed to get delegate.");
-            }
+        var executeDownloadFunc = Marshal.GetDelegateForFunctionPointer<ExecuteDownload>(executeDownloadFuncHandle);
+        if (executeDownloadFunc is null)
+        {
+            throw new Exception("Failed to get delegate.");
+        }
 
-            foreach (var item in InputItems)
+        foreach (var item in InputItems)
+        {
+            foreach (var metadataName in item.MetadataNames.OfType<string>())
             {
-                foreach (var metadataName in item.MetadataNames.OfType<string>())
+                if (metadataName.StartsWith("RID-", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (metadataName.StartsWith("RID-", StringComparison.OrdinalIgnoreCase))
+                    var val = item.GetMetadata(metadataName);
+                    if (!string.IsNullOrEmpty(val))
                     {
-                        var val = item.GetMetadata(metadataName);
-                        if (!string.IsNullOrEmpty(val))
+                        var runtimeId = metadataName.Substring(4);
+                        if (RuntimeIdentifier != null &&
+                            !RuntimeIdentifier.Equals(runtimeId, StringComparison.OrdinalIgnoreCase))
                         {
-                            var runtimeId = metadataName.Substring(4);
-                            if (RuntimeIdentifier != null &&
-                                !RuntimeIdentifier.Equals(runtimeId, StringComparison.OrdinalIgnoreCase))
-                            {
-                                continue;
-                            }
+                            continue;
+                        }
 
-                            var targetDirHandle = GCHandle.Alloc(
-                                value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
+                        var targetDirHandle = GCHandle.Alloc(
+                            value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
+                            type: GCHandleType.Pinned
+                        );
+                        try
+                        {
+                            var ridHandle = GCHandle.Alloc(
+                                value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
                                 type: GCHandleType.Pinned
                             );
                             try
                             {
-                                var ridHandle = GCHandle.Alloc(
-                                    value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
+                                var nameHandle = GCHandle.Alloc(
+                                    value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
                                     type: GCHandleType.Pinned
                                 );
                                 try
                                 {
-                                    var nameHandle = GCHandle.Alloc(
-                                        value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
+                                    var urlHandle = GCHandle.Alloc(
+                                        value: Encoding.UTF8.GetBytes(val + "\0"),
                                         type: GCHandleType.Pinned
                                     );
                                     try
                                     {
-                                        var urlHandle = GCHandle.Alloc(
-                                            value: Encoding.UTF8.GetBytes(val + "\0"),
-                                            type: GCHandleType.Pinned
+                                        success &= executeDownloadFunc(
+                                            targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
+                                            ridPtr: ridHandle.AddrOfPinnedObject(),
+                                            namePtr: nameHandle.AddrOfPinnedObject(),
+                                            urlPtr: urlHandle.AddrOfPinnedObject()
                                         );
-                                        try
-                                        {
-                                            success &= executeDownloadFunc(
-                                                targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
-                                                ridPtr: ridHandle.AddrOfPinnedObject(),
-                                                namePtr: nameHandle.AddrOfPinnedObject(),
-                                                urlPtr: urlHandle.AddrOfPinnedObject()
-                                            );
-                                        }
-                                        finally
-                                        {
-                                            urlHandle.Free();
-                                        }
                                     }
                                     finally
                                     {
-                                        nameHandle.Free();
+                                        urlHandle.Free();
                                     }
                                 }
                                 finally
                                 {
-                                    ridHandle.Free();
+                                    nameHandle.Free();
                                 }
                             }
                             finally
                             {
-                                targetDirHandle.Free();
+                                ridHandle.Free();
                             }
+                        }
+                        finally
+                        {
+                            targetDirHandle.Free();
                         }
                     }
                 }
             }
-        }
-        finally
-        {
-            NativeLibrary.Free(libHandle);
         }
 
         return success;
