@@ -29,7 +29,7 @@ public static class NativeLib
             );
             try
             {
-                executeDownloadFunc(1, messageHandle.AddrOfPinnedObject(), bytes.Length);
+                executeDownloadFunc(level, messageHandle.AddrOfPinnedObject(), bytes.Length);
             }
             finally
             {
