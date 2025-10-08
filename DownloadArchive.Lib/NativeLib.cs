@@ -18,7 +18,11 @@ public static class NativeLib
         nint logPtr
     )
     {
-        using Mutex mutex = new(false, "Global\\DownloadArchiveNuget");
+        using Mutex mutex = new(false,
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? "Global\\DownloadArchiveNuget"
+                : "download_archive_nuget");
+
         mutex.WaitOne();
         try
         {

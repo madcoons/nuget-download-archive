@@ -22,13 +22,13 @@ public class ArchiveDecompressor(Action<int, string> log)
     public async Task<string> DecompressAsync(string inputPath, string url,
         CancellationToken cancellationToken = default)
     {
-        string destinationDir = GetOutputDir(inputPath);
+        var destinationDir = GetOutputDir(inputPath);
         if (Directory.Exists(destinationDir))
         {
             return destinationDir;
         }
 
-        string originalFileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
+        var originalFileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
 
         if (!Directory.Exists(destinationDir))
         {

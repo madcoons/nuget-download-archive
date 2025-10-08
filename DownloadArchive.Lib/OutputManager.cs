@@ -10,7 +10,7 @@ public class OutputManager(
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        string outputBaseDir = Path.Combine(baseDir, name);
+        var outputBaseDir = Path.Combine(baseDir, name);
 
         if (!Directory.Exists(outputBaseDir))
         {
