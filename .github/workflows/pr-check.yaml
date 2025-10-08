@@ -178,4 +178,4 @@ jobs:
         - name: Build ExampleWithNuget project
           run: dotnet build ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
           env:
-            LD_DEBUG: true
+            LD_DEBUG: all
