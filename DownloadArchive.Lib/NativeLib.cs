@@ -96,15 +96,6 @@ public static class NativeLib
         OutputManager outputManager = new(targetDir, log);
         ArchiveDownloader archiveDownloader = new(log);
 
-        // var lockPath = archiveCacher.GetCachePath(url) + "_lock";
-        // var lockDir = Path.GetDirectoryName(lockPath);
-        // if (!string.IsNullOrEmpty(lockDir))
-        // {
-        //     Directory.CreateDirectory(lockDir);
-        // }
-
-        // await using var fileLock = await LockFileAsync(lockPath, cancellationToken);
-
         var cachePath = archiveCacher.GetCachePath(url);
         if (!File.Exists(cachePath))
         {
@@ -116,31 +107,4 @@ public static class NativeLib
 
         outputManager.GenerateOutput(decompressedDir, rid, name, cancellationToken);
     }
-
-    // private static async Task<IAsyncDisposable> LockFileAsync(string path,
-    //     CancellationToken cancellationToken = default)
-    // {
-    //     var timeout = TimeSpan.FromMinutes(10);
-    //     var retryDelay = TimeSpan.FromMilliseconds(200);
-    //
-    //     var stopwatch = Stopwatch.StartNew();
-    //     while (stopwatch.Elapsed < timeout)
-    //     {
-    //         try
-    //         {
-    //             return new FileStream(
-    //                 path,
-    //                 FileMode.OpenOrCreate,
-    //                 FileAccess.ReadWrite,
-    //                 FileShare.None
-    //             );
-    //         }
-    //         catch (IOException)
-    //         {
-    //             await Task.Delay(retryDelay, cancellationToken);
-    //         }
-    //     }
-    //
-    //     throw new TimeoutException($"Timed out acquiring lock on {path}");
-    // }
 }
