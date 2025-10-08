@@ -1,4 +1,4 @@
-name: Release
+name: PR Check
 on:
   pull_request:
     branches:
