@@ -11,9 +11,6 @@ public static class NativeLibrary
 
     [DllImport(KERNEL32, SetLastError = true)]
     private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-
-    [DllImport(KERNEL32, SetLastError = true)]
-    private static extern bool FreeLibrary(IntPtr hModule);
 #else
 #if LINUX
     private const string LIBDL = "libdl.so.2";
@@ -28,9 +25,6 @@ public static class NativeLibrary
 
     [DllImport(LIBDL)]
     private static extern IntPtr dlsym(IntPtr handle, string symbol);
-
-    [DllImport(LIBDL)]
-    private static extern int dlclose(IntPtr handle);
 
     private const int RTLD_NOW = 2;
 #endif
@@ -63,14 +57,5 @@ public static class NativeLibrary
         }
 
         return ptr;
-    }
-
-    public static void Free(IntPtr libraryHandle)
-    {
-#if WINDOWS
-        FreeLibrary(libraryHandle);
-#else
-        dlclose(libraryHandle);
-#endif
     }
 }
