@@ -111,5 +111,7 @@ public static class NativeLib
         var decompressedDir = await archiveDecompressor.DecompressAsync(cachePath, url, cancellationToken);
 
         outputManager.GenerateOutput(decompressedDir, rid, name, cancellationToken);
+
+        GC.KeepAlive(cacheLock);
     }
 }
