@@ -5,7 +5,27 @@ namespace DownloadArchive.Lib;
 
 public class ArchiveDecompressor(Action<int, string> log)
 {
-    public string GetOutputDir(string inputPath)
+    public async Task<string> DecompressAsync(string inputPath, string url,
+        CancellationToken cancellationToken = default)
+    {
+        var destinationDir = GetOutputDir(inputPath);
+        if (Directory.Exists(destinationDir))
+        {
+            return destinationDir;
+        }
+
+        Directory.CreateDirectory(destinationDir);
+
+        var originalFileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
+
+        log(0, $"Decompressing {inputPath} to {GetOutputDir(inputPath)}");
+
+        await DecompressToDirAsync(inputPath, destinationDir, originalFileName, cancellationToken);
+
+        return destinationDir;
+    }
+
+    private string GetOutputDir(string inputPath)
     {
         var archivesDir = Path.GetFullPath(Path.Combine(
             Path.GetTempPath(),
@@ -19,33 +39,10 @@ public class ArchiveDecompressor(Action<int, string> log)
         return destinationDir;
     }
 
-    public async Task<string> DecompressAsync(string inputPath, string url,
-        CancellationToken cancellationToken = default)
-    {
-        var destinationDir = GetOutputDir(inputPath);
-        if (Directory.Exists(destinationDir))
-        {
-            return destinationDir;
-        }
-
-        var originalFileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
-
-        if (!Directory.Exists(destinationDir))
-        {
-            Directory.CreateDirectory(destinationDir);
-        }
-
-        log(0, $"Decompressing {inputPath} to {GetOutputDir(inputPath)}");
-
-        await DecompressToDirAsync(inputPath, destinationDir, originalFileName, cancellationToken);
-
-        return destinationDir;
-    }
-
     private async Task DecompressToDirAsync(string inputPath, string dir, string originalFileName,
         CancellationToken cancellationToken = default)
     {
-        await using FileStream file = File.OpenRead(inputPath);
+        await using var file = File.OpenRead(inputPath);
 
         if (originalFileName.EndsWith(".tar.gz", StringComparison.OrdinalIgnoreCase))
         {
@@ -58,7 +55,7 @@ public class ArchiveDecompressor(Action<int, string> log)
         }
         else
         {
-            throw new($"File '{originalFileName}' not supported.");
+            throw new Exception($"File '{originalFileName}' not supported.");
         }
     }
 }

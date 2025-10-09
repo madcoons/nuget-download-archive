@@ -20,8 +20,12 @@ public class DownloadTask : Task
         nint logPtr
     );
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    private delegate int GetCurrentRuntimeIdentifier(nint refBuffer, int maxLength);
+
     [Required] public string DownloadArchiveLib { get; set; } = null!;
     [Required] public string TargetDir { get; set; } = null!;
+    [Required] public bool FallbackToProcessRuntimeInformation { get; set; }
     public bool IsTestProject { get; set; }
     public string? RuntimeIdentifier { get; set; }
     public string? OutputType { get; set; }
@@ -48,6 +52,9 @@ public class DownloadTask : Task
         });
 
         var success = true;
+
+        var currentRuntimeIdentifier = GeCurrentRuntimeIdentifier(libHandle);
+
         var executeDownloadFuncHandle = NativeLibrary.GetExport(libHandle, "execute_download");
         if (executeDownloadFuncHandle == IntPtr.Zero)
         {
@@ -55,10 +62,6 @@ public class DownloadTask : Task
         }
 
         var executeDownloadFunc = Marshal.GetDelegateForFunctionPointer<ExecuteDownload>(executeDownloadFuncHandle);
-        if (executeDownloadFunc is null)
-        {
-            throw new Exception("Failed to get delegate.");
-        }
 
         LogCallback log = (level, data, length) =>
         {
@@ -76,92 +79,122 @@ public class DownloadTask : Task
             }
         };
 
-        var logCallbackHandle = GCHandle.Alloc(
-            value: log,
-            type: GCHandleType.Normal
-        );
+        nint logCallbackPtr = Marshal.GetFunctionPointerForDelegate(log);
 
-        try
+        foreach (var item in InputItems)
         {
-            nint logCallbackPtr = Marshal.GetFunctionPointerForDelegate(log);
-
-            foreach (var item in InputItems)
+            foreach (var metadataName in item.MetadataNames.OfType<string>())
             {
-                foreach (var metadataName in item.MetadataNames.OfType<string>())
+                if (metadataName.StartsWith("RID-", StringComparison.OrdinalIgnoreCase))
                 {
-                    if (metadataName.StartsWith("RID-", StringComparison.OrdinalIgnoreCase))
+                    var val = item.GetMetadata(metadataName);
+                    if (string.IsNullOrEmpty(val))
                     {
-                        var val = item.GetMetadata(metadataName);
-                        if (!string.IsNullOrEmpty(val))
-                        {
-                            var runtimeId = metadataName.Substring(4);
-                            if (RuntimeIdentifier != null &&
-                                !RuntimeIdentifier.Equals(runtimeId, StringComparison.OrdinalIgnoreCase))
-                            {
-                                continue;
-                            }
+                        continue;
+                    }
 
-                            var targetDirHandle = GCHandle.Alloc(
-                                value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
+                    var runtimeId = metadataName.Substring(4);
+                    var targetId = RuntimeIdentifier ??
+                                   (FallbackToProcessRuntimeInformation ? currentRuntimeIdentifier : null);
+
+                    if (targetId != null &&
+                        !targetId.Equals(runtimeId, StringComparison.OrdinalIgnoreCase))
+                    {
+                        continue;
+                    }
+
+                    var targetDirHandle = GCHandle.Alloc(
+                        value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
+                        type: GCHandleType.Pinned
+                    );
+                    try
+                    {
+                        var ridHandle = GCHandle.Alloc(
+                            value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
+                            type: GCHandleType.Pinned
+                        );
+                        try
+                        {
+                            var nameHandle = GCHandle.Alloc(
+                                value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
                                 type: GCHandleType.Pinned
                             );
                             try
                             {
-                                var ridHandle = GCHandle.Alloc(
-                                    value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
+                                var urlHandle = GCHandle.Alloc(
+                                    value: Encoding.UTF8.GetBytes(val + "\0"),
                                     type: GCHandleType.Pinned
                                 );
                                 try
                                 {
-                                    var nameHandle = GCHandle.Alloc(
-                                        value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
-                                        type: GCHandleType.Pinned
+                                    success &= executeDownloadFunc(
+                                        targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
+                                        ridPtr: ridHandle.AddrOfPinnedObject(),
+                                        namePtr: nameHandle.AddrOfPinnedObject(),
+                                        urlPtr: urlHandle.AddrOfPinnedObject(),
+                                        logPtr: logCallbackPtr
                                     );
-                                    try
-                                    {
-                                        var urlHandle = GCHandle.Alloc(
-                                            value: Encoding.UTF8.GetBytes(val + "\0"),
-                                            type: GCHandleType.Pinned
-                                        );
-                                        try
-                                        {
-                                            success &= executeDownloadFunc(
-                                                targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
-                                                ridPtr: ridHandle.AddrOfPinnedObject(),
-                                                namePtr: nameHandle.AddrOfPinnedObject(),
-                                                urlPtr: urlHandle.AddrOfPinnedObject(),
-                                                logPtr: logCallbackPtr
-                                            );
-                                        }
-                                        finally
-                                        {
-                                            urlHandle.Free();
-                                        }
-                                    }
-                                    finally
-                                    {
-                                        nameHandle.Free();
-                                    }
                                 }
                                 finally
                                 {
-                                    ridHandle.Free();
+                                    urlHandle.Free();
                                 }
                             }
                             finally
                             {
-                                targetDirHandle.Free();
+                                nameHandle.Free();
                             }
                         }
+                        finally
+                        {
+                            ridHandle.Free();
+                        }
+                    }
+                    finally
+                    {
+                        targetDirHandle.Free();
                     }
                 }
             }
         }
-        finally
-        {
-            logCallbackHandle.Free();
-        }
+
+        GC.KeepAlive(log);
 
         return success;
+    }
+
+    private static string GeCurrentRuntimeIdentifier(nint libHandle)
+    {
+        var getCurrentRIDFuncHandle = NativeLibrary.GetExport(libHandle, "get_current_rid");
+        if (getCurrentRIDFuncHandle == IntPtr.Zero)
+        {
+            throw new Exception("Failed to load function \"get_current_rid\".");
+        }
+
+        var getCurrentRIDFunc =
+            Marshal.GetDelegateForFunctionPointer<GetCurrentRuntimeIdentifier>(getCurrentRIDFuncHandle);
+
+        var resBuffer = new byte[100];
+        var resBufferHandle = GCHandle.Alloc(
+            value: resBuffer,
+            type: GCHandleType.Pinned
+        );
+        try
+        {
+            var length = getCurrentRIDFunc(resBufferHandle.AddrOfPinnedObject(), resBuffer.Length);
+            if (length < 0)
+            {
+                throw new Exception("Failed to get current RID.");
+            }
+
+            var subBuffer = new byte[length];
+            Array.Copy(resBuffer, subBuffer, length);
+            var currenRID = Encoding.UTF8.GetString(subBuffer);
+            return currenRID;
+        }
+        finally
+        {
+            resBufferHandle.Free();
+        }
     }
 }

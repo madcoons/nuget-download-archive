@@ -2,7 +2,7 @@
     <PropertyGroup>
         <IsPackable>true</IsPackable>
         <PackageId>DownloadArchive</PackageId>
-        <Version>1.0.28</Version>
+        <Version>1.0.29</Version>
         <Authors>MyDesigns Devs</Authors>
         <Company>MyDesigns</Company>
         <RepositoryUrl>https://github.com/madcoons/nuget-download-archive.git</RepositoryUrl>
