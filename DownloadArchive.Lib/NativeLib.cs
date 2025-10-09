@@ -36,6 +36,12 @@ public static class NativeLib
             }
         };
 
+        using Mutex mutex = new(false,
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                ? "Global\\DownloadArchiveNuget"
+                : "download_archive_nuget");
+
+        mutex.WaitOne();
         try
         {
             var targetDir = Marshal.PtrToStringUTF8(targetDirPtr);
@@ -62,6 +68,8 @@ public static class NativeLib
         }
         catch (Exception e)
         {
+            mutex.ReleaseMutex();
+
             Console.Error.WriteLine(e);
             log(1, e.ToString());
 
@@ -100,18 +108,17 @@ public static class NativeLib
 
         var cachePath = archiveCacher.GetCachePath(url);
 
-        await using var cacheLock = await FileLocker.LockForFileAsync(cachePath, cancellationToken);
-
-        if (!File.Exists(cachePath))
+        await using (await FileLocker.LockForFileAsync(cachePath, cancellationToken))
         {
-            await using var archiveStream = await archiveDownloader.DownloadAsync(url);
-            await archiveCacher.CacheAsync(archiveStream, url, cancellationToken);
+            if (!File.Exists(cachePath))
+            {
+                await using var archiveStream = await archiveDownloader.DownloadAsync(url);
+                await archiveCacher.CacheAsync(archiveStream, url, cancellationToken);
+            }
+
+            var decompressedDir = await archiveDecompressor.DecompressAsync(cachePath, url, cancellationToken);
+
+            outputManager.GenerateOutput(decompressedDir, rid, name, cancellationToken);
         }
-
-        var decompressedDir = await archiveDecompressor.DecompressAsync(cachePath, url, cancellationToken);
-
-        outputManager.GenerateOutput(decompressedDir, rid, name, cancellationToken);
-
-        GC.KeepAlive(cacheLock);
     }
 }
