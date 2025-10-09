@@ -10,11 +10,15 @@ public class ArchiveCacher(Action<int, string> log)
         var cacheFilePath = GetCachePath(url);
         DirHelpers.EnsureDirExistsForFile(cacheFilePath);
 
-        await using var file = File.OpenWrite(cacheFilePath);
+        await using (var file = File.OpenWrite(cacheFilePath))
+        {
+            log(0, $"Writing cache for {url} to {cacheFilePath}");
 
-        log(0, $"Writing cache for {url} to {cacheFilePath}");
+            await stream.CopyToAsync(file, cancellationToken);
 
-        await stream.CopyToAsync(file, cancellationToken);
+            await file.FlushAsync(cancellationToken);
+            file.Flush(true);
+        }
     }
 
     public string GetCachePath(string url)
