@@ -19,12 +19,7 @@ public static class FileLocker
         {
             try
             {
-                return new FileStream(
-                    path,
-                    FileMode.OpenOrCreate,
-                    FileAccess.ReadWrite,
-                    FileShare.None
-                );
+                return File.OpenWrite(path);
             }
             catch (IOException)
             {
