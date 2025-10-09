@@ -19,7 +19,7 @@ public static class FileLocker
         {
             try
             {
-                return File.OpenWrite(path);
+                return File.OpenWrite(lockPath);
             }
             catch (IOException)
             {

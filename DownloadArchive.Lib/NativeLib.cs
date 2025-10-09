@@ -36,12 +36,6 @@ public static class NativeLib
             }
         };
 
-        using Mutex mutex = new(false,
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-                ? "Global\\DownloadArchiveNuget"
-                : "download_archive_nuget");
-
-        mutex.WaitOne();
         try
         {
             var targetDir = Marshal.PtrToStringUTF8(targetDirPtr);
@@ -68,8 +62,6 @@ public static class NativeLib
         }
         catch (Exception e)
         {
-            mutex.ReleaseMutex();
-
             Console.Error.WriteLine(e);
             log(1, e.ToString());
 
@@ -117,7 +109,6 @@ public static class NativeLib
             }
 
             var decompressedDir = await archiveDecompressor.DecompressAsync(cachePath, url, cancellationToken);
-
             outputManager.GenerateOutput(decompressedDir, rid, name, cancellationToken);
         }
     }
