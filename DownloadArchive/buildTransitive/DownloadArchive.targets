@@ -38,6 +38,7 @@
                 RuntimeIdentifier="$(RuntimeIdentifier)"
                 IsTestProject="$(IsTestProject)"
                 OutputType="$(OutputType)"
+                FallbackToProcessRuntimeInformation="True"
         />
     </Target>
 
@@ -49,6 +50,7 @@
                 RuntimeIdentifier="$(RuntimeIdentifier)"
                 IsTestProject="$(IsTestProject)"
                 OutputType="$(OutputType)"
+                FallbackToProcessRuntimeInformation="False"
         />
     </Target>
 </Project>

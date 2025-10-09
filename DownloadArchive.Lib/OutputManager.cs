@@ -12,10 +12,7 @@ public class OutputManager(
 
         var outputBaseDir = Path.Combine(baseDir, name);
 
-        if (!Directory.Exists(outputBaseDir))
-        {
-            Directory.CreateDirectory(outputBaseDir);
-        }
+        Directory.CreateDirectory(outputBaseDir);
 
         string outputDir = Path.Combine(outputBaseDir, runtimeId);
 

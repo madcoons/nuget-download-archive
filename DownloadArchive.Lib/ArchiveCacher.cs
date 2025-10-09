@@ -8,12 +8,7 @@ public class ArchiveCacher(Action<int, string> log)
     public async Task CacheAsync(Stream stream, string url, CancellationToken cancellationToken = default)
     {
         var cacheFilePath = GetCachePath(url);
-
-        var dir = Path.GetDirectoryName(cacheFilePath);
-        if (!string.IsNullOrEmpty(dir))
-        {
-            Directory.CreateDirectory(dir);
-        }
+        DirHelpers.EnsureDirExistsForFile(cacheFilePath);
 
         await using var file = File.OpenWrite(cacheFilePath);
 
