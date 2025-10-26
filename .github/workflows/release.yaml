@@ -26,7 +26,7 @@ jobs:
           run: dotnet publish DownloadArchive.BuildTasks -r linux -f netstandard2.0 -o artifacts/tasks/netstandard2.0/linux
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-linux-x64
             path: artifacts
@@ -46,7 +46,7 @@ jobs:
           run: dotnet publish DownloadArchive.Lib -r linux-arm64 -o artifacts/native-libs/linux-arm64
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-linux-arm64
             path: artifacts
@@ -72,7 +72,7 @@ jobs:
           run: dotnet publish DownloadArchive.BuildTasks -r osx -f netstandard2.0 -o artifacts/tasks/netstandard2.0/osx
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-osx
             path: artifacts
@@ -104,7 +104,7 @@ jobs:
           run: dotnet publish DownloadArchive.BuildTasks -r win -f net46 -o artifacts/tasks/net46
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-win
             path: artifacts
@@ -117,7 +117,7 @@ jobs:
         - uses: actions/checkout@v5
 
         - name: Download all artifacts
-          uses: actions/download-artifact@v5
+          uses: actions/download-artifact@v6
           with:
             pattern: artifacts-*
             path: artifacts
