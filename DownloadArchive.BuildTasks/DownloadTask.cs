@@ -17,7 +17,6 @@ public class DownloadTask : Task
         nint ridPtr,
         nint namePtr,
         nint urlPtr,
-        nint cacheDirPtr,
         nint logPtr
     );
 
@@ -26,7 +25,6 @@ public class DownloadTask : Task
 
     [Required] public string DownloadArchiveLib { get; set; } = null!;
     [Required] public string TargetDir { get; set; } = null!;
-    public string? CacheDir { get; set; }
     [Required] public bool FallbackToProcessRuntimeInformation { get; set; }
     public bool IsTestProject { get; set; }
     public string? RuntimeIdentifier { get; set; }
@@ -113,7 +111,6 @@ public class DownloadTask : Task
                             ridPtr: PinUtf8(runtimeId, handles),
                             namePtr: PinUtf8(item.ItemSpec, handles),
                             urlPtr: PinUtf8(val, handles),
-                            cacheDirPtr: PinUtf8(CacheDir ?? string.Empty, handles),
                             logPtr: logCallbackPtr
                         );
                     }

@@ -1,10 +1,10 @@
 namespace DownloadArchive.Lib;
 
-public class ArchiveCacher(CachePaths cachePaths, Action<int, string> log)
+public class ArchiveCacher(Action<int, string> log)
 {
     public string GetCachePath(string url)
     {
-        return cachePaths.GetArchivePath(url);
+        return CachePaths.GetArchivePath(url);
     }
 
     public bool IsCached(string url)

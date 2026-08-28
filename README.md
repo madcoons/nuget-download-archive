@@ -27,17 +27,7 @@ The following example will download geckodriver to output `gecko-driver-0.34.0/(
 
 ## Caching
 
-Downloaded archives and their decompressed content are cached, so repeated builds do not download the same archive again. By default the cache lives in `nuget-download-archive` inside the temp directory, so it is cleaned up by the system and does not grow forever.
-
-Set `DownloadArchiveCacheDir` to keep it somewhere else, for example inside the project so it can be restored by a CI cache, keeping in mind that such a location has to be cleaned up by yourself:
-
-```csproj
-<PropertyGroup>
-    <DownloadArchiveCacheDir>obj/download-archive-cache</DownloadArchiveCacheDir>
-</PropertyGroup>
-```
-
-Relative paths are resolved against the project directory.
+Downloaded archives and their decompressed content are cached, so repeated builds do not download the same archive again. The cache lives in `nuget-download-archive` inside the temp directory, so it is cleaned up by the system and does not grow forever.
 
 ## Interrupted builds
 

@@ -3,12 +3,12 @@ using System.IO.Compression;
 
 namespace DownloadArchive.Lib;
 
-public class ArchiveDecompressor(CachePaths cachePaths, Action<int, string> log)
+public class ArchiveDecompressor(Action<int, string> log)
 {
     public async Task<string> DecompressAsync(string inputPath, string url,
         CancellationToken cancellationToken = default)
     {
-        var destinationDir = cachePaths.GetDecompressedDir(inputPath);
+        var destinationDir = CachePaths.GetDecompressedDir(inputPath);
         if (CompletionMarker.IsComplete(destinationDir))
         {
             return destinationDir;

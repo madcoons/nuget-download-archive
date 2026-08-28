@@ -4,33 +4,25 @@ using System.Text;
 namespace DownloadArchive.Lib;
 
 /// <summary>
-/// Resolves where downloaded archives and their decompressed content are kept.
-/// The root defaults to the temp directory, so the cache is cleaned up by the system, and can be
-/// overridden with the DownloadArchiveCacheDir MSBuild property.
+/// Resolves where downloaded archives and their decompressed content are kept. This is the temp
+/// directory, so the cache is cleaned up by the system instead of growing forever.
 /// </summary>
-public class CachePaths(string? rootDir = null)
+public static class CachePaths
 {
-    public string RootDir { get; } = ResolveRootDir(rootDir);
-
-    public string GetArchivePath(string url)
+    public static string GetArchivePath(string url)
     {
-        return Path.GetFullPath(Path.Combine(RootDir, "archives-cache", $"{GetUrlHash(url)}.bin"));
+        return Path.GetFullPath(Path.Combine(GetRootDir(), "archives-cache", $"{GetUrlHash(url)}.bin"));
     }
 
-    public string GetDecompressedDir(string archivePath)
+    public static string GetDecompressedDir(string archivePath)
     {
         var name = Path.GetFileNameWithoutExtension(archivePath);
 
-        return Path.GetFullPath(Path.Combine(RootDir, "archives", name));
+        return Path.GetFullPath(Path.Combine(GetRootDir(), "archives", name));
     }
 
-    private static string ResolveRootDir(string? rootDir)
+    private static string GetRootDir()
     {
-        if (!string.IsNullOrWhiteSpace(rootDir))
-        {
-            return Path.GetFullPath(rootDir);
-        }
-
         return Path.GetFullPath(Path.Combine(Path.GetTempPath(), "nuget-download-archive"));
     }
 
