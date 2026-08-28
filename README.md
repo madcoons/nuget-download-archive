@@ -41,4 +41,6 @@ Relative paths are resolved against the project directory.
 
 ## Interrupted builds
 
-Every cached archive, decompressed archive and generated output directory has a marker file (`.<name>.complete`) next to it, which is written only after everything is in place. Content without its marker is treated as a leftover of an interrupted build and is downloaded, decompressed or copied again. Content is also always written to a temporary location first and moved into its final place as the last step, so an interrupted build cannot leave partial content behind for the next one to pick up.
+Every cached archive, decompressed archive and generated output directory has a marker file (`.<name>.complete`) next to it, which is written only after everything is in place and holds the number of files it stands for, not counting markers themselves. Content is used only when its marker is there and the file count still matches, so a leftover of an interrupted build, or content that lost files afterwards to a temp cleanup, is downloaded, decompressed or copied again.
+
+Content is also always written to a temporary location first and moved into its final place as the last step, so an interrupted build cannot leave partial content behind for the next one to pick up.

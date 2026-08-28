@@ -9,9 +9,7 @@ public class ArchiveCacher(CachePaths cachePaths, Action<int, string> log)
 
     public bool IsCached(string url)
     {
-        var cacheFilePath = GetCachePath(url);
-
-        return File.Exists(cacheFilePath) && CompletionMarker.Exists(cacheFilePath);
+        return CompletionMarker.IsComplete(GetCachePath(url));
     }
 
     public async Task CacheAsync(Stream stream, string url, CancellationToken cancellationToken = default)

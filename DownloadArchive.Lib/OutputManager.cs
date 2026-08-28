@@ -16,7 +16,7 @@ public class OutputManager(
 
         string outputDir = Path.Combine(outputBaseDir, runtimeId);
 
-        if (Directory.Exists(outputDir) && CompletionMarker.Exists(outputDir))
+        if (CompletionMarker.IsComplete(outputDir))
         {
             return;
         }

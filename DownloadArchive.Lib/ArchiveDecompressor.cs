@@ -9,7 +9,7 @@ public class ArchiveDecompressor(CachePaths cachePaths, Action<int, string> log)
         CancellationToken cancellationToken = default)
     {
         var destinationDir = cachePaths.GetDecompressedDir(inputPath);
-        if (Directory.Exists(destinationDir) && CompletionMarker.Exists(destinationDir))
+        if (CompletionMarker.IsComplete(destinationDir))
         {
             return destinationDir;
         }
