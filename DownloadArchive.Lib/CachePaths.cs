@@ -5,8 +5,8 @@ namespace DownloadArchive.Lib;
 
 /// <summary>
 /// Resolves where downloaded archives and their decompressed content are kept.
-/// The root defaults to a per user cache directory and can be overridden with the
-/// DownloadArchiveCacheDir MSBuild property.
+/// The root defaults to the temp directory, so the cache is cleaned up by the system, and can be
+/// overridden with the DownloadArchiveCacheDir MSBuild property.
 /// </summary>
 public class CachePaths(string? rootDir = null)
 {
@@ -31,10 +31,7 @@ public class CachePaths(string? rootDir = null)
             return Path.GetFullPath(rootDir);
         }
 
-        var localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-        var baseDir = string.IsNullOrEmpty(localAppData) ? Path.GetTempPath() : localAppData;
-
-        return Path.GetFullPath(Path.Combine(baseDir, "nuget-download-archive"));
+        return Path.GetFullPath(Path.Combine(Path.GetTempPath(), "nuget-download-archive"));
     }
 
     private static string GetUrlHash(string url)
