@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="DownloadArchiveOSPlatform;DownloadArchiveOSArchitecture;DownloadArchiveRuntime;DownloadArchiveLibName;DownloadArchiveLib;DownloadArchiveTasksLib">
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" TreatAsLocalProperty="DownloadArchiveOSPlatform;DownloadArchiveOSArchitecture;DownloadArchiveRuntime;DownloadArchiveLibName;DownloadArchiveLib;DownloadArchiveTasksLib;DownloadArchiveCacheDir">
     <PropertyGroup>
         <DownloadArchiveOSPlatform Condition="$([MSBuild]::IsOSPlatform('windows'))">win</DownloadArchiveOSPlatform>
         <DownloadArchiveOSPlatform Condition="$([MSBuild]::IsOSPlatform('osx'))">osx</DownloadArchiveOSPlatform>
@@ -16,6 +16,9 @@
         <DownloadArchiveTasksLib Condition="'$(_DebugDownloadArchive)' == 'True'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', '..', 'DownloadArchive.BuildTasks', 'bin', 'Release', 'netstandard2.0', 'publish', 'DownloadArchive.BuildTasks.dll'))))</DownloadArchiveTasksLib>
         <DownloadArchiveTasksLib Condition="'$(_DebugDownloadArchive)' != 'True' AND '$(MSBuildRuntimeType)' == 'Core'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'tasks', 'netstandard2.0', '$(DownloadArchiveOSPlatform)', 'DownloadArchive.BuildTasks.dll'))))</DownloadArchiveTasksLib>
         <DownloadArchiveTasksLib Condition="'$(_DebugDownloadArchive)' != 'True' AND '$(MSBuildRuntimeType)' != 'Core'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'tasks', 'net46', 'DownloadArchive.BuildTasks.dll'))))</DownloadArchiveTasksLib>
+
+        <!-- Optional override of the archive cache location. Relative paths are resolved against the project directory. -->
+        <DownloadArchiveCacheDir Condition="'$(DownloadArchiveCacheDir)' != ''">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildProjectDirectory)', '$(DownloadArchiveCacheDir)'))))</DownloadArchiveCacheDir>
     </PropertyGroup>
 
     <UsingTask TaskName="DownloadArchive.BuildTasks.CleanTask" AssemblyFile="$(DownloadArchiveTasksLib)"/>
@@ -34,6 +37,7 @@
         <DownloadTask
                 DownloadArchiveLib="$(DownloadArchiveLib)"
                 TargetDir="$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(OutDir)))))"
+                CacheDir="$(DownloadArchiveCacheDir)"
                 InputItems="@(DownloadArchive)"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
                 IsTestProject="$(IsTestProject)"
@@ -46,6 +50,7 @@
         <DownloadTask
                 DownloadArchiveLib="$(DownloadArchiveLib)"
                 TargetDir="$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine($(MSBuildProjectDirectory),$(PublishDir)))))"
+                CacheDir="$(DownloadArchiveCacheDir)"
                 InputItems="@(DownloadArchive)"
                 RuntimeIdentifier="$(RuntimeIdentifier)"
                 IsTestProject="$(IsTestProject)"

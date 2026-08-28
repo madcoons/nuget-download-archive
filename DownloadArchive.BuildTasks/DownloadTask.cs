@@ -17,6 +17,7 @@ public class DownloadTask : Task
         nint ridPtr,
         nint namePtr,
         nint urlPtr,
+        nint cacheDirPtr,
         nint logPtr
     );
 
@@ -25,6 +26,7 @@ public class DownloadTask : Task
 
     [Required] public string DownloadArchiveLib { get; set; } = null!;
     [Required] public string TargetDir { get; set; } = null!;
+    public string? CacheDir { get; set; }
     [Required] public bool FallbackToProcessRuntimeInformation { get; set; }
     public bool IsTestProject { get; set; }
     public string? RuntimeIdentifier { get; set; }
@@ -103,56 +105,24 @@ public class DownloadTask : Task
                         continue;
                     }
 
-                    var targetDirHandle = GCHandle.Alloc(
-                        value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
-                        type: GCHandleType.Pinned
-                    );
+                    var handles = new List<GCHandle>();
                     try
                     {
-                        var ridHandle = GCHandle.Alloc(
-                            value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
-                            type: GCHandleType.Pinned
+                        success &= executeDownloadFunc(
+                            targetDirPtr: PinUtf8(TargetDir, handles),
+                            ridPtr: PinUtf8(runtimeId, handles),
+                            namePtr: PinUtf8(item.ItemSpec, handles),
+                            urlPtr: PinUtf8(val, handles),
+                            cacheDirPtr: PinUtf8(CacheDir ?? string.Empty, handles),
+                            logPtr: logCallbackPtr
                         );
-                        try
-                        {
-                            var nameHandle = GCHandle.Alloc(
-                                value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
-                                type: GCHandleType.Pinned
-                            );
-                            try
-                            {
-                                var urlHandle = GCHandle.Alloc(
-                                    value: Encoding.UTF8.GetBytes(val + "\0"),
-                                    type: GCHandleType.Pinned
-                                );
-                                try
-                                {
-                                    success &= executeDownloadFunc(
-                                        targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
-                                        ridPtr: ridHandle.AddrOfPinnedObject(),
-                                        namePtr: nameHandle.AddrOfPinnedObject(),
-                                        urlPtr: urlHandle.AddrOfPinnedObject(),
-                                        logPtr: logCallbackPtr
-                                    );
-                                }
-                                finally
-                                {
-                                    urlHandle.Free();
-                                }
-                            }
-                            finally
-                            {
-                                nameHandle.Free();
-                            }
-                        }
-                        finally
-                        {
-                            ridHandle.Free();
-                        }
                     }
                     finally
                     {
-                        targetDirHandle.Free();
+                        foreach (var handle in handles)
+                        {
+                            handle.Free();
+                        }
                     }
                 }
             }
@@ -161,6 +131,17 @@ public class DownloadTask : Task
         GC.KeepAlive(log);
 
         return success;
+    }
+
+    private static nint PinUtf8(string value, List<GCHandle> handles)
+    {
+        var handle = GCHandle.Alloc(
+            value: Encoding.UTF8.GetBytes(value + "\0"),
+            type: GCHandleType.Pinned
+        );
+        handles.Add(handle);
+
+        return handle.AddrOfPinnedObject();
     }
 
     private static string GeCurrentRuntimeIdentifier(nint libHandle)

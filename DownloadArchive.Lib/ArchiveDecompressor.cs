@@ -3,38 +3,36 @@ using System.IO.Compression;
 
 namespace DownloadArchive.Lib;
 
-public class ArchiveDecompressor(Action<int, string> log)
+public class ArchiveDecompressor(CachePaths cachePaths, Action<int, string> log)
 {
     public async Task<string> DecompressAsync(string inputPath, string url,
         CancellationToken cancellationToken = default)
     {
-        var destinationDir = GetOutputDir(inputPath);
-        if (Directory.Exists(destinationDir))
+        var destinationDir = cachePaths.GetDecompressedDir(inputPath);
+        if (Directory.Exists(destinationDir) && CompletionMarker.Exists(destinationDir))
         {
             return destinationDir;
         }
 
-        Directory.CreateDirectory(destinationDir);
-
         var originalFileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
 
-        log(0, $"Decompressing {inputPath} to {GetOutputDir(inputPath)}");
+        log(0, $"Decompressing {inputPath} to {destinationDir}");
 
-        await DecompressToDirAsync(inputPath, destinationDir, originalFileName, cancellationToken);
+        var tempDir = DirHelpers.GetTempSiblingPath(destinationDir);
+        try
+        {
+            Directory.CreateDirectory(tempDir);
 
-        return destinationDir;
-    }
+            await DecompressToDirAsync(inputPath, tempDir, originalFileName, cancellationToken);
 
-    private string GetOutputDir(string inputPath)
-    {
-        var archivesDir = Path.GetFullPath(Path.Combine(
-            Path.GetTempPath(),
-            "nuget-download-archive",
-            "archives"
-        ));
+            DirHelpers.ReplaceDir(tempDir, destinationDir);
+        }
+        finally
+        {
+            DirHelpers.DeleteDirIfExists(tempDir);
+        }
 
-        string fileName = Path.GetFileNameWithoutExtension(inputPath);
-        string destinationDir = Path.GetFullPath(Path.Combine(archivesDir, fileName));
+        CompletionMarker.Create(destinationDir);
 
         return destinationDir;
     }

@@ -15,6 +15,7 @@ public static class NativeLib
         nint ridPtr,
         nint namePtr,
         nint urlPtr,
+        nint cacheDirPtr,
         nint logPtr
     )
     {
@@ -50,11 +51,14 @@ public static class NativeLib
             var url = Marshal.PtrToStringUTF8(urlPtr);
             ArgumentNullException.ThrowIfNull(url);
 
+            var cacheDir = Marshal.PtrToStringUTF8(cacheDirPtr);
+
             ExecuteDownloadAsync(
                 targetDir: targetDir,
                 rid: rid,
                 name: name,
                 url: url,
+                cacheDir: cacheDir,
                 log: log
             ).GetAwaiter().GetResult();
 
@@ -89,12 +93,14 @@ public static class NativeLib
         string rid,
         string name,
         string url,
+        string? cacheDir,
         Action<int, string> log,
         CancellationToken cancellationToken = default
     )
     {
-        ArchiveCacher archiveCacher = new(log);
-        ArchiveDecompressor archiveDecompressor = new(log);
+        CachePaths cachePaths = new(cacheDir);
+        ArchiveCacher archiveCacher = new(cachePaths, log);
+        ArchiveDecompressor archiveDecompressor = new(cachePaths, log);
         OutputManager outputManager = new(targetDir, log);
         ArchiveDownloader archiveDownloader = new(log);
 
@@ -102,7 +108,7 @@ public static class NativeLib
 
         await using (await FileLocker.LockForFileAsync(cachePath, cancellationToken))
         {
-            if (!File.Exists(cachePath))
+            if (!archiveCacher.IsCached(url))
             {
                 await using var archiveStream = await archiveDownloader.DownloadAsync(url);
                 await archiveCacher.CacheAsync(archiveStream, url, cancellationToken);
