@@ -33,4 +33,8 @@ Downloaded archives and their decompressed content are cached, so repeated build
 
 Every cached archive, decompressed archive and generated output directory has a marker file (`.<name>.complete`) next to it, which is written only after everything is in place and holds the number of files it stands for, not counting markers themselves. Content is used only when its marker is there and the file count still matches, so a leftover of an interrupted build, or content that lost files afterwards to a temp cleanup, is downloaded, decompressed or copied again.
 
-Content is also always written to a temporary location first and moved into its final place as the last step, so an interrupted build cannot leave partial content behind for the next one to pick up.
+The downloaded archive and the copy into the build output are written beside their destination and moved onto it as a last step, so a reader never meets them half written.
+
+## Concurrent builds
+
+Cache entries are guarded by lock files, one for the download and one for the decompressed copy, so builds running at the same time share the work instead of repeating or corrupting it: the first to arrive downloads, the rest wait and then use what it left.

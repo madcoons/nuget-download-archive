@@ -5,36 +5,28 @@ namespace DownloadArchive.Lib;
 
 public class ArchiveDecompressor(Action<int, string> log)
 {
-    public async Task<string> DecompressAsync(string inputPath, string url,
+    public async Task DecompressAsync(string inputPath, string url,
         CancellationToken cancellationToken = default)
     {
         var destinationDir = CachePaths.GetDecompressedDir(inputPath);
         if (CompletionMarker.IsComplete(destinationDir))
         {
-            return destinationDir;
+            return;
         }
 
         var originalFileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
 
         log(0, $"Decompressing {inputPath} to {destinationDir}");
 
-        var tempDir = DirHelpers.GetTempSiblingPath(destinationDir);
-        try
-        {
-            Directory.CreateDirectory(tempDir);
+        // The marker goes first: from here until it is written again the directory counts as incomplete,
+        // so whatever an interrupted decompression left behind is dropped rather than trusted.
+        CompletionMarker.Remove(destinationDir);
+        DirHelpers.DeleteDirIfExists(destinationDir);
+        Directory.CreateDirectory(destinationDir);
 
-            await DecompressToDirAsync(inputPath, tempDir, originalFileName, cancellationToken);
-
-            DirHelpers.ReplaceDir(tempDir, destinationDir);
-        }
-        finally
-        {
-            DirHelpers.DeleteDirIfExists(tempDir);
-        }
+        await DecompressToDirAsync(inputPath, destinationDir, originalFileName, cancellationToken);
 
         CompletionMarker.Create(destinationDir);
-
-        return destinationDir;
     }
 
     private async Task DecompressToDirAsync(string inputPath, string dir, string originalFileName,
