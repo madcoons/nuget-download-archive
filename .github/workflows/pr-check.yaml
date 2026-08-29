@@ -143,10 +143,27 @@ jobs:
             name: package
             path: DownloadArchive/bin/Release
 
-    test-linux-x64:
-      name: Test on Linux x64
-      runs-on: ubuntu-latest
+    test:
+      name: Test on ${{ matrix.name }}
+      runs-on: ${{ matrix.os }}
       needs: ["pack"]
+      strategy:
+        fail-fast: false
+        matrix:
+          include:
+            - { name: Linux x64, os: ubuntu-latest, rid: linux-x64 }
+            - { name: Linux ARM64, os: ubuntu-24.04-arm, rid: linux-arm64 }
+            - { name: macOS x64, os: macos-15-intel, rid: osx-x64 }
+            - { name: macOS ARM64, os: macos-latest, rid: osx-arm64 }
+            - { name: Windows x64, os: windows-latest, rid: win-x64 }
+            - { name: Windows ARM64, os: windows-11-arm, rid: win-arm64 }
+      defaults:
+        run:
+          shell: bash
+      env:
+        PROJECT: ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
+        OUTPUT: DownloadArchive.ExampleWithNuget/bin
+        ARCHIVE: gecko-driver-0.34.0
       steps:
         - uses: actions/checkout@v5
 
@@ -162,92 +179,31 @@ jobs:
             path: package
 
         - name: Remove existing nuget
-          run: dotnet remove ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive
+          run: dotnet remove $PROJECT package DownloadArchive
 
         - name: Add nuget from archive
-          run: dotnet add ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive --source package
+          run: dotnet add $PROJECT package DownloadArchive --source package
 
         - name: Build ExampleWithNuget project
-          run: dotnet build ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
+          run: dotnet build $PROJECT
+
+        - name: Check build output holds the archive for ${{ matrix.rid }}
+          run: ./.github/scripts/check-archive.sh $OUTPUT/Debug/net9.0/$ARCHIVE ${{ matrix.rid }}
 
         - name: Publish ExampleWithNuget project
-          run: dotnet publish ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
+          run: dotnet publish $PROJECT
 
-        - name: Show bin
+        - name: Check publish output holds the archive for every RID
+          run: ./.github/scripts/check-archive.sh $OUTPUT/Release/net9.0/publish/$ARCHIVE linux-x64 linux-arm64 osx-x64 osx-arm64 win-x64 win-arm64
+
+        - name: Clean ExampleWithNuget project
+          run: dotnet clean $PROJECT
+
+        - name: Check clean removed the archive
           run: |
-            echo "=== Artifacts Directory ==="
-            tree ./DownloadArchive.ExampleWithNuget/bin || ls -R ./DownloadArchive.ExampleWithNuget/bin
-
-        - name: Clean ExampleWithNuget project
-          run: dotnet clean ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
-
-        - name: Show bin
-          run: |
-            echo "=== Artifacts Directory ==="
-            tree ./DownloadArchive.ExampleWithNuget/bin || ls -R ./DownloadArchive.ExampleWithNuget/bin
-
-    test-macos:
-      name: Test on OSX
-      runs-on: macos-latest
-      needs: ["pack"]
-      steps:
-        - uses: actions/checkout@v5
-
-        - name: Setup .NET
-          uses: actions/setup-dotnet@v5
-          with:
-            dotnet-version: 9.x
-
-        - name: Download package
-          uses: actions/download-artifact@v5
-          with:
-            name: package
-            path: package
-
-        - name: Remove existing nuget
-          run: dotnet remove ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive
-
-        - name: Add nuget from archive
-          run: dotnet add ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive --source package
-
-        - name: Build ExampleWithNuget project
-          run: dotnet build ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
-
-        - name: Publish ExampleWithNuget project
-          run: dotnet publish ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
-
-        - name: Clean ExampleWithNuget project
-          run: dotnet clean ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
-
-    test-win:
-      name: Test on Windows
-      runs-on: windows-latest
-      needs: ["pack"]
-      steps:
-        - uses: actions/checkout@v5
-
-        - name: Setup .NET
-          uses: actions/setup-dotnet@v5
-          with:
-            dotnet-version: 9.x
-
-        - name: Download package
-          uses: actions/download-artifact@v5
-          with:
-            name: package
-            path: package
-
-        - name: Remove existing nuget
-          run: dotnet remove ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive
-
-        - name: Add nuget from archive
-          run: dotnet add ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj package DownloadArchive --source package
-
-        - name: Build ExampleWithNuget project
-          run: dotnet build ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
-
-        - name: Publish ExampleWithNuget project
-          run: dotnet publish ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
-
-        - name: Clean ExampleWithNuget project
-          run: dotnet clean ./DownloadArchive.ExampleWithNuget/DownloadArchive.ExampleWithNuget.csproj
+            dir=$OUTPUT/Debug/net9.0/$ARCHIVE
+            if [ -e "$dir" ]; then
+              echo "::error::$dir still exists after clean"
+              ls -R "$dir"
+              exit 1
+            fi
