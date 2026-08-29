@@ -11,18 +11,6 @@ public class DownloadTask : Task
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void LogCallback(int level, nint data, int length);
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate bool ExecuteDownload(
-        nint targetDirPtr,
-        nint ridPtr,
-        nint namePtr,
-        nint urlPtr,
-        nint logPtr
-    );
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate int GetCurrentRuntimeIdentifier(nint refBuffer, int maxLength);
-
     [Required] public string DownloadArchiveLib { get; set; } = null!;
     [Required] public string TargetDir { get; set; } = null!;
     [Required] public bool FallbackToProcessRuntimeInformation { get; set; }
@@ -33,7 +21,7 @@ public class DownloadTask : Task
 
     private static readonly ConcurrentDictionary<string, nint> LibHandles = new();
 
-    public override bool Execute()
+    public override unsafe bool Execute()
     {
         if (!IsTestProject && !string.Equals(OutputType, "exe", StringComparison.OrdinalIgnoreCase))
         {
@@ -55,13 +43,8 @@ public class DownloadTask : Task
 
         var currentRuntimeIdentifier = GeCurrentRuntimeIdentifier(libHandle);
 
-        var executeDownloadFuncHandle = NativeLibrary.GetExport(libHandle, "execute_download");
-        if (executeDownloadFuncHandle == IntPtr.Zero)
-        {
-            throw new Exception("Failed to load function \"execute_download\".");
-        }
-
-        var executeDownloadFunc = Marshal.GetDelegateForFunctionPointer<ExecuteDownload>(executeDownloadFuncHandle);
+        var executeDownload = (delegate* unmanaged[Cdecl]<nint, nint, nint, nint, nint, bool>)
+            NativeLibrary.GetExport(libHandle, "execute_download");
 
         LogCallback log = (level, data, length) =>
         {
@@ -106,13 +89,12 @@ public class DownloadTask : Task
                     var handles = new List<GCHandle>();
                     try
                     {
-                        success &= executeDownloadFunc(
-                            targetDirPtr: PinUtf8(TargetDir, handles),
-                            ridPtr: PinUtf8(runtimeId, handles),
-                            namePtr: PinUtf8(item.ItemSpec, handles),
-                            urlPtr: PinUtf8(val, handles),
-                            logPtr: logCallbackPtr
-                        );
+                        var targetDirPtr = PinUtf8(TargetDir, handles);
+                        var ridPtr = PinUtf8(runtimeId, handles);
+                        var namePtr = PinUtf8(item.ItemSpec, handles);
+                        var urlPtr = PinUtf8(val, handles);
+
+                        success &= executeDownload(targetDirPtr, ridPtr, namePtr, urlPtr, logCallbackPtr);
                     }
                     finally
                     {
@@ -141,16 +123,10 @@ public class DownloadTask : Task
         return handle.AddrOfPinnedObject();
     }
 
-    private static string GeCurrentRuntimeIdentifier(nint libHandle)
+    private static unsafe string GeCurrentRuntimeIdentifier(nint libHandle)
     {
-        var getCurrentRIDFuncHandle = NativeLibrary.GetExport(libHandle, "get_current_rid");
-        if (getCurrentRIDFuncHandle == IntPtr.Zero)
-        {
-            throw new Exception("Failed to load function \"get_current_rid\".");
-        }
-
-        var getCurrentRIDFunc =
-            Marshal.GetDelegateForFunctionPointer<GetCurrentRuntimeIdentifier>(getCurrentRIDFuncHandle);
+        var getCurrentRid = (delegate* unmanaged[Cdecl]<nint, int, int>)
+            NativeLibrary.GetExport(libHandle, "get_current_rid");
 
         var resBuffer = new byte[100];
         var resBufferHandle = GCHandle.Alloc(
@@ -159,7 +135,7 @@ public class DownloadTask : Task
         );
         try
         {
-            var length = getCurrentRIDFunc(resBufferHandle.AddrOfPinnedObject(), resBuffer.Length);
+            var length = getCurrentRid(resBufferHandle.AddrOfPinnedObject(), resBuffer.Length);
             if (length < 0)
             {
                 throw new Exception("Failed to get current RID.");
