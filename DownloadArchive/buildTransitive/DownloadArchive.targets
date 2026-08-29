@@ -14,8 +14,7 @@
         <DownloadArchiveLib Condition="'$(_DebugDownloadArchive)' != 'True'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'native-libs', '$(DownloadArchiveRuntime)', '$(DownloadArchiveLibName)'))))</DownloadArchiveLib>
 
         <DownloadArchiveTasksLib Condition="'$(_DebugDownloadArchive)' == 'True'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', '..', 'DownloadArchive.BuildTasks', 'bin', 'Release', 'netstandard2.0', 'publish', 'DownloadArchive.BuildTasks.dll'))))</DownloadArchiveTasksLib>
-        <DownloadArchiveTasksLib Condition="'$(_DebugDownloadArchive)' != 'True' AND '$(MSBuildRuntimeType)' == 'Core'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'tasks', 'netstandard2.0', '$(DownloadArchiveOSPlatform)', 'DownloadArchive.BuildTasks.dll'))))</DownloadArchiveTasksLib>
-        <DownloadArchiveTasksLib Condition="'$(_DebugDownloadArchive)' != 'True' AND '$(MSBuildRuntimeType)' != 'Core'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'tasks', 'net46', 'DownloadArchive.BuildTasks.dll'))))</DownloadArchiveTasksLib>
+        <DownloadArchiveTasksLib Condition="'$(_DebugDownloadArchive)' != 'True'">$([System.IO.Path]::GetFullPath($([System.IO.Path]::Combine('$(MSBuildThisFileDirectory)', '..', 'tasks', 'DownloadArchive.BuildTasks.dll'))))</DownloadArchiveTasksLib>
     </PropertyGroup>
 
     <UsingTask TaskName="DownloadArchive.BuildTasks.CleanTask" AssemblyFile="$(DownloadArchiveTasksLib)"/>
