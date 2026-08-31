@@ -23,7 +23,7 @@ jobs:
           run: dotnet publish DownloadArchive.BuildTasks -o artifacts/tasks
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-linux-x64
             path: artifacts
@@ -43,7 +43,7 @@ jobs:
           run: dotnet publish DownloadArchive.Lib -r linux-arm64 -o artifacts/native-libs/linux-arm64
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-linux-arm64
             path: artifacts
@@ -67,7 +67,7 @@ jobs:
 
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-osx
             path: artifacts
@@ -93,7 +93,7 @@ jobs:
           run: dotnet publish DownloadArchive.Lib -r win-arm64 -o artifacts/native-libs/win-arm64
 
         - name: Upload artifacts
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: artifacts-win
             path: artifacts
@@ -138,7 +138,7 @@ jobs:
             done
 
         - name: Upload package
-          uses: actions/upload-artifact@v4
+          uses: actions/upload-artifact@v5
           with:
             name: package
             path: DownloadArchive/bin/Release
