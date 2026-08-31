@@ -16,14 +16,26 @@ public class OutputManager(
 
         string outputDir = Path.Combine(outputBaseDir, runtimeId);
 
-        if (Directory.Exists(outputDir))
+        if (CompletionMarker.IsComplete(outputDir))
         {
             return;
         }
 
         log(0, $"Coping {inputDir} to {outputDir}");
 
-        CopyDirectory(inputDir, outputDir, cancellationToken);
+        var tempDir = DirHelpers.GetTempSiblingPath(outputDir);
+        try
+        {
+            CopyDirectory(inputDir, tempDir, cancellationToken);
+
+            DirHelpers.ReplaceDir(tempDir, outputDir);
+        }
+        finally
+        {
+            DirHelpers.DeleteDirIfExists(tempDir);
+        }
+
+        CompletionMarker.Create(outputDir);
     }
 
     static void CopyDirectory(string sourceDir, string destinationDir, CancellationToken cancellationToken = default)

@@ -99,16 +99,24 @@ public static class NativeLib
         ArchiveDownloader archiveDownloader = new(log);
 
         var cachePath = archiveCacher.GetCachePath(url);
+        var decompressedDir = CachePaths.GetDecompressedDir(cachePath);
 
+        // Downloading and decompressing hold separate locks, so a build that only needs to decompress an
+        // archive somebody else already cached does not queue behind a download of something unrelated.
         await using (await FileLocker.LockForFileAsync(cachePath, cancellationToken))
         {
-            if (!File.Exists(cachePath))
+            if (!archiveCacher.IsCached(url))
             {
                 await using var archiveStream = await archiveDownloader.DownloadAsync(url);
                 await archiveCacher.CacheAsync(archiveStream, url, cancellationToken);
             }
+        }
 
-            var decompressedDir = await archiveDecompressor.DecompressAsync(cachePath, url, cancellationToken);
+        // The output is copied straight out of the decompressed directory, so it stays under the lock that
+        // guards that directory. Otherwise another build could clear and refill it mid copy.
+        await using (await FileLocker.LockForFileAsync(decompressedDir, cancellationToken))
+        {
+            await archiveDecompressor.DecompressAsync(cachePath, url, cancellationToken);
             outputManager.GenerateOutput(decompressedDir, rid, name, cancellationToken);
         }
     }

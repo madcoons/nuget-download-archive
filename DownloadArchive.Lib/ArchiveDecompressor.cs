@@ -5,38 +5,28 @@ namespace DownloadArchive.Lib;
 
 public class ArchiveDecompressor(Action<int, string> log)
 {
-    public async Task<string> DecompressAsync(string inputPath, string url,
+    public async Task DecompressAsync(string inputPath, string url,
         CancellationToken cancellationToken = default)
     {
-        var destinationDir = GetOutputDir(inputPath);
-        if (Directory.Exists(destinationDir))
+        var destinationDir = CachePaths.GetDecompressedDir(inputPath);
+        if (CompletionMarker.IsComplete(destinationDir))
         {
-            return destinationDir;
+            return;
         }
-
-        Directory.CreateDirectory(destinationDir);
 
         var originalFileName = Path.GetFileName(new Uri(url, UriKind.Absolute).LocalPath);
 
-        log(0, $"Decompressing {inputPath} to {GetOutputDir(inputPath)}");
+        log(0, $"Decompressing {inputPath} to {destinationDir}");
+
+        // The marker goes first: from here until it is written again the directory counts as incomplete,
+        // so whatever an interrupted decompression left behind is dropped rather than trusted.
+        CompletionMarker.Remove(destinationDir);
+        DirHelpers.DeleteDirIfExists(destinationDir);
+        Directory.CreateDirectory(destinationDir);
 
         await DecompressToDirAsync(inputPath, destinationDir, originalFileName, cancellationToken);
 
-        return destinationDir;
-    }
-
-    private string GetOutputDir(string inputPath)
-    {
-        var archivesDir = Path.GetFullPath(Path.Combine(
-            Path.GetTempPath(),
-            "nuget-download-archive",
-            "archives"
-        ));
-
-        string fileName = Path.GetFileNameWithoutExtension(inputPath);
-        string destinationDir = Path.GetFullPath(Path.Combine(archivesDir, fileName));
-
-        return destinationDir;
+        CompletionMarker.Create(destinationDir);
     }
 
     private async Task DecompressToDirAsync(string inputPath, string dir, string originalFileName,

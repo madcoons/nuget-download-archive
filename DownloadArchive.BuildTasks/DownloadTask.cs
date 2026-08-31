@@ -11,18 +11,6 @@ public class DownloadTask : Task
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     private delegate void LogCallback(int level, nint data, int length);
 
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate bool ExecuteDownload(
-        nint targetDirPtr,
-        nint ridPtr,
-        nint namePtr,
-        nint urlPtr,
-        nint logPtr
-    );
-
-    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-    private delegate int GetCurrentRuntimeIdentifier(nint refBuffer, int maxLength);
-
     [Required] public string DownloadArchiveLib { get; set; } = null!;
     [Required] public string TargetDir { get; set; } = null!;
     [Required] public bool FallbackToProcessRuntimeInformation { get; set; }
@@ -33,7 +21,7 @@ public class DownloadTask : Task
 
     private static readonly ConcurrentDictionary<string, nint> LibHandles = new();
 
-    public override bool Execute()
+    public override unsafe bool Execute()
     {
         if (!IsTestProject && !string.Equals(OutputType, "exe", StringComparison.OrdinalIgnoreCase))
         {
@@ -55,13 +43,8 @@ public class DownloadTask : Task
 
         var currentRuntimeIdentifier = GeCurrentRuntimeIdentifier(libHandle);
 
-        var executeDownloadFuncHandle = NativeLibrary.GetExport(libHandle, "execute_download");
-        if (executeDownloadFuncHandle == IntPtr.Zero)
-        {
-            throw new Exception("Failed to load function \"execute_download\".");
-        }
-
-        var executeDownloadFunc = Marshal.GetDelegateForFunctionPointer<ExecuteDownload>(executeDownloadFuncHandle);
+        var executeDownload = (delegate* unmanaged[Cdecl]<nint, nint, nint, nint, nint, bool>)
+            NativeLibrary.GetExport(libHandle, "execute_download");
 
         LogCallback log = (level, data, length) =>
         {
@@ -103,56 +86,22 @@ public class DownloadTask : Task
                         continue;
                     }
 
-                    var targetDirHandle = GCHandle.Alloc(
-                        value: Encoding.UTF8.GetBytes(TargetDir + "\0"),
-                        type: GCHandleType.Pinned
-                    );
+                    var handles = new List<GCHandle>();
                     try
                     {
-                        var ridHandle = GCHandle.Alloc(
-                            value: Encoding.UTF8.GetBytes(runtimeId + "\0"),
-                            type: GCHandleType.Pinned
-                        );
-                        try
-                        {
-                            var nameHandle = GCHandle.Alloc(
-                                value: Encoding.UTF8.GetBytes(item.ItemSpec + "\0"),
-                                type: GCHandleType.Pinned
-                            );
-                            try
-                            {
-                                var urlHandle = GCHandle.Alloc(
-                                    value: Encoding.UTF8.GetBytes(val + "\0"),
-                                    type: GCHandleType.Pinned
-                                );
-                                try
-                                {
-                                    success &= executeDownloadFunc(
-                                        targetDirPtr: targetDirHandle.AddrOfPinnedObject(),
-                                        ridPtr: ridHandle.AddrOfPinnedObject(),
-                                        namePtr: nameHandle.AddrOfPinnedObject(),
-                                        urlPtr: urlHandle.AddrOfPinnedObject(),
-                                        logPtr: logCallbackPtr
-                                    );
-                                }
-                                finally
-                                {
-                                    urlHandle.Free();
-                                }
-                            }
-                            finally
-                            {
-                                nameHandle.Free();
-                            }
-                        }
-                        finally
-                        {
-                            ridHandle.Free();
-                        }
+                        var targetDirPtr = PinUtf8(TargetDir, handles);
+                        var ridPtr = PinUtf8(runtimeId, handles);
+                        var namePtr = PinUtf8(item.ItemSpec, handles);
+                        var urlPtr = PinUtf8(val, handles);
+
+                        success &= executeDownload(targetDirPtr, ridPtr, namePtr, urlPtr, logCallbackPtr);
                     }
                     finally
                     {
-                        targetDirHandle.Free();
+                        foreach (var handle in handles)
+                        {
+                            handle.Free();
+                        }
                     }
                 }
             }
@@ -163,16 +112,21 @@ public class DownloadTask : Task
         return success;
     }
 
-    private static string GeCurrentRuntimeIdentifier(nint libHandle)
+    private static nint PinUtf8(string value, List<GCHandle> handles)
     {
-        var getCurrentRIDFuncHandle = NativeLibrary.GetExport(libHandle, "get_current_rid");
-        if (getCurrentRIDFuncHandle == IntPtr.Zero)
-        {
-            throw new Exception("Failed to load function \"get_current_rid\".");
-        }
+        var handle = GCHandle.Alloc(
+            value: Encoding.UTF8.GetBytes(value + "\0"),
+            type: GCHandleType.Pinned
+        );
+        handles.Add(handle);
 
-        var getCurrentRIDFunc =
-            Marshal.GetDelegateForFunctionPointer<GetCurrentRuntimeIdentifier>(getCurrentRIDFuncHandle);
+        return handle.AddrOfPinnedObject();
+    }
+
+    private static unsafe string GeCurrentRuntimeIdentifier(nint libHandle)
+    {
+        var getCurrentRid = (delegate* unmanaged[Cdecl]<nint, int, int>)
+            NativeLibrary.GetExport(libHandle, "get_current_rid");
 
         var resBuffer = new byte[100];
         var resBufferHandle = GCHandle.Alloc(
@@ -181,7 +135,7 @@ public class DownloadTask : Task
         );
         try
         {
-            var length = getCurrentRIDFunc(resBufferHandle.AddrOfPinnedObject(), resBuffer.Length);
+            var length = getCurrentRid(resBufferHandle.AddrOfPinnedObject(), resBuffer.Length);
             if (length < 0)
             {
                 throw new Exception("Failed to get current RID.");

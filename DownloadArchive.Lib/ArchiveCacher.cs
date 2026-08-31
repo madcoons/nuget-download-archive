@@ -1,36 +1,44 @@
-using System.Security.Cryptography;
-using System.Text;
-
 namespace DownloadArchive.Lib;
 
 public class ArchiveCacher(Action<int, string> log)
 {
+    public string GetCachePath(string url)
+    {
+        return CachePaths.GetArchivePath(url);
+    }
+
+    public bool IsCached(string url)
+    {
+        return CompletionMarker.IsComplete(GetCachePath(url));
+    }
+
     public async Task CacheAsync(Stream stream, string url, CancellationToken cancellationToken = default)
     {
         var cacheFilePath = GetCachePath(url);
         DirHelpers.EnsureDirExistsForFile(cacheFilePath);
 
-        await using var file = File.OpenWrite(cacheFilePath);
+        CompletionMarker.Remove(cacheFilePath);
+
         log(0, $"Writing cache for {url} to {cacheFilePath}");
 
-        await stream.CopyToAsync(file, cancellationToken);
-    }
+        var tempFilePath = DirHelpers.GetTempSiblingPath(cacheFilePath);
+        try
+        {
+            await using (var file = new FileStream(tempFilePath, FileMode.Create, FileAccess.Write, FileShare.None))
+            {
+                await stream.CopyToAsync(file, cancellationToken);
+            }
 
-    public string GetCachePath(string url)
-    {
-        byte[] inputBytes = Encoding.UTF8.GetBytes(url);
-        using SHA256 sha256 = SHA256.Create();
-        byte[] hashBytes = sha256.ComputeHash(inputBytes);
-        string base64Hash = Convert.ToBase64String(hashBytes);
-        string sanitizedBase64Hash = new string(Array.FindAll(base64Hash.ToCharArray(), char.IsLetterOrDigit));
+            File.Move(tempFilePath, cacheFilePath, true);
+        }
+        finally
+        {
+            if (File.Exists(tempFilePath))
+            {
+                File.Delete(tempFilePath);
+            }
+        }
 
-        string cacheFilePath = Path.GetFullPath(Path.Combine(
-            Path.GetTempPath(),
-            "nuget-download-archive",
-            "archives-cache",
-            $"{sanitizedBase64Hash}.bin"
-        ));
-
-        return cacheFilePath;
+        CompletionMarker.Create(cacheFilePath);
     }
 }

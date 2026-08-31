@@ -2,40 +2,49 @@ using System.Runtime.InteropServices;
 
 namespace DownloadArchive.BuildTasks;
 
+/// <summary>
+/// Loads the native DownloadArchive.Lib for the running OS. A P/Invoke is resolved the first time it
+/// is called, so the imports of the other platforms are only declarations here and one build of this
+/// assembly serves every OS.
+/// </summary>
 public static class NativeLibrary
 {
-#if WINDOWS
-    private const string KERNEL32 = "kernel32";
-    [DllImport(KERNEL32, SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern IntPtr LoadLibrary(string lpFileName);
+    [DllImport("kernel32", EntryPoint = "LoadLibraryW", SetLastError = true, CharSet = CharSet.Unicode)]
+    private static extern IntPtr LoadLibraryWindows(string fileName);
 
-    [DllImport(KERNEL32, SetLastError = true)]
-    private static extern IntPtr GetProcAddress(IntPtr hModule, string procName);
-#else
-#if LINUX
-    private const string LIBDL = "libdl.so.2";
-#elif OSX
-    private const string LIBDL = "dl";
-#else
-    #error Unsupported platform
-#endif
+    [DllImport("kernel32", EntryPoint = "GetProcAddress", SetLastError = true)]
+    private static extern IntPtr GetProcAddressWindows(IntPtr handle, string symbol);
 
-    [DllImport(LIBDL)]
-    private static extern IntPtr dlopen(string fileName, int flags);
+    [DllImport("libdl.so.2", EntryPoint = "dlopen")]
+    private static extern IntPtr DlOpenLinux(string fileName, int flags);
 
-    [DllImport(LIBDL)]
-    private static extern IntPtr dlsym(IntPtr handle, string symbol);
+    [DllImport("libdl.so.2", EntryPoint = "dlsym")]
+    private static extern IntPtr DlSymLinux(IntPtr handle, string symbol);
+
+    [DllImport("dl", EntryPoint = "dlopen")]
+    private static extern IntPtr DlOpenOsx(string fileName, int flags);
+
+    [DllImport("dl", EntryPoint = "dlsym")]
+    private static extern IntPtr DlSymOsx(IntPtr handle, string symbol);
 
     private const int RTLD_NOW = 2;
-#endif
 
     public static IntPtr Load(string libraryPath)
     {
-#if WINDOWS
-        var handle = LoadLibrary(libraryPath);
-#else
-        var handle = dlopen(libraryPath, RTLD_NOW);
-#endif
+        IntPtr handle;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            handle = LoadLibraryWindows(libraryPath);
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            handle = DlOpenOsx(libraryPath, RTLD_NOW);
+        }
+        else
+        {
+            handle = DlOpenLinux(libraryPath, RTLD_NOW);
+        }
+
         if (handle == IntPtr.Zero)
         {
             throw new InvalidOperationException($"Unable to load native library: {libraryPath}");
@@ -46,11 +55,20 @@ public static class NativeLibrary
 
     public static IntPtr GetExport(IntPtr libraryHandle, string name)
     {
-#if WINDOWS
-        var ptr = GetProcAddress(libraryHandle, name);
-#else
-        var ptr = dlsym(libraryHandle, name);
-#endif
+        IntPtr ptr;
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+        {
+            ptr = GetProcAddressWindows(libraryHandle, name);
+        }
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+        {
+            ptr = DlSymOsx(libraryHandle, name);
+        }
+        else
+        {
+            ptr = DlSymLinux(libraryHandle, name);
+        }
+
         if (ptr == IntPtr.Zero)
         {
             throw new MissingMethodException($"Export '{name}' not found.");
